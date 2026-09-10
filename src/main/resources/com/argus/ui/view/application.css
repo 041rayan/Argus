@@ -1,0 +1,20 @@
+/*
+ * application.css — Argus dark operator look.
+ * Layered after the AtlantaFX Primer Dark theme; controllers add style
+ * classes only, never setStyle.
+ */
+
+.root-pane {
+    -fx-background-color: #0d1117;
+}
+
+.title-label {
+    -fx-font-size: 28.0px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e6edf3;
+}
+
+.status-label {
+    -fx-font-size: 14.0px;
+    -fx-text-fill: #8b949e;
+}

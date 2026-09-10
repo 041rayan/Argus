@@ -1,8 +1,11 @@
+# Spec files (course documents; stay local per session decision 1-2)
 AGENTS.md
 API.md
+BACKLOG.md
 CORE.md
 CRYPTO.md
 DB.md
+DECISIONS.md
 DIARY.md
 GIT.md
 JAVAFX.md
@@ -10,3 +13,10 @@ JSON.md
 SESSION.md
 TESTING.md
 THREAD.md
+
+# Build and runtime (GIT.md day zero)
+target/
+*.db
+.env
+.idea/
+*.log

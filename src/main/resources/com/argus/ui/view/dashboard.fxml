@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<AnchorPane fx:id="root"
+            prefHeight="640.0" prefWidth="900.0"
+            styleClass="root-pane"
+            xmlns="http://javafx.com/javafx/21.0.8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.argus.ui.controller.DashboardController">
+    <children>
+        <Label fx:id="titleLabel" styleClass="title-label" text="Argus">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
+        </Label>
+        <Label fx:id="statusLabel" styleClass="status-label" text="Loading…">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+        </Label>
+    </children>
+</AnchorPane>
