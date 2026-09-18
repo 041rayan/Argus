@@ -45,21 +45,21 @@
             <version>${javafx.version}</version>
         </dependency>
 
-        <!-- SQLite (DB.md) -->
+        <!-- SQLite -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>${sqlite.version}</version>
         </dependency>
 
-        <!-- JSON (JSON.md) -->
+        <!-- JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Logging (AGENTS.md: SLF4J only) -->
+        <!-- Logging (SLF4J only) -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -72,14 +72,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- AtlantaFX theme (JAVAFX.md) -->
+        <!-- AtlantaFX theme -->
         <dependency>
             <groupId>io.github.mkpaz</groupId>
             <artifactId>atlantafx-base</artifactId>
             <version>${atlantafx.version}</version>
         </dependency>
 
-        <!-- Tests (TESTING.md) -->
+        <!-- Tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
