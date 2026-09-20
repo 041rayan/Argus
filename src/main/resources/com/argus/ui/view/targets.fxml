@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<AnchorPane fx:id="root"
+            prefHeight="640.0" prefWidth="900.0"
+            styleClass="root-pane"
+            xmlns="http://javafx.com/javafx/21.0.8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.argus.ui.controller.TargetsController">
+    <children>
+        <Label styleClass="title-label" text="Targets">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
+        </Label>
+
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+            <children>
+                <TextField fx:id="labelField" prefHeight="32.0" prefWidth="140.0"
+                           promptText="Label" HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="domainField" prefHeight="32.0" prefWidth="170.0"
+                           promptText="Domain" HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="scopeField" prefHeight="32.0" prefWidth="230.0"
+                           promptText="Scope CIDRs, comma separated" HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="profileCombo" prefHeight="32.0" prefWidth="100.0"/>
+                <Button mnemonicParsing="false" onAction="#onAdd" prefHeight="32.0" text="Add"/>
+            </children>
+        </HBox>
+
+        <TextField fx:id="searchField" prefHeight="32.0" promptText="Search label or domain">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
+        </TextField>
+
+        <TableView fx:id="targetsTable">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>158.0</AnchorPane.topAnchor>
+            <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
+            <columns>
+                <TableColumn prefWidth="170.0" text="Label">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="label"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="210.0" text="Domain">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="domain"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="330.0" text="Scope CIDRs">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="scopeCidrs"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="110.0" text="Profile">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="profile"/>
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
+        </TableView>
+
+        <Button mnemonicParsing="false" onAction="#onBack" text="Back">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
+        </Button>
+        <Button mnemonicParsing="false" onAction="#onDelete" text="Delete">
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
+        </Button>
+    </children>
+</AnchorPane>

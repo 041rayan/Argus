@@ -2,12 +2,12 @@ package com.argus.ui.controller;
 
 import com.argus.ui.MainApp;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 
-/**
- * Controller for the placeholder dashboard view (MVC pattern).
- * FXMLLoader creates it; MainApp passes itself through {@link #setMain}.
- */
+import java.io.IOException;
+
+/** Controller for the dashboard view (MVC pattern). */
 public final class DashboardController {
 
     @FXML
@@ -24,7 +24,11 @@ public final class DashboardController {
     }
 
     @FXML
-    private void initialize() {
-        // Only cell value factories go here; no I/O, no business logic.
+    private void onShowTargets() {
+        try {
+            main.showTargets();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Cannot open targets view.").showAndWait();
+        }
     }
 }
