@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<AnchorPane fx:id="root"
+            prefHeight="360.0" prefWidth="480.0"
+            styleClass="root-pane"
+            xmlns="http://javafx.com/javafx/21.0.8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.argus.ui.controller.LoginController">
+    <children>
+        <VBox spacing="12.0">
+            <AnchorPane.leftAnchor>60.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>60.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>48.0</AnchorPane.topAnchor>
+            <children>
+                <Label styleClass="title-label" text="Argus"/>
+                <Label fx:id="modeLabel" styleClass="status-label" text="Checking accounts…"/>
+                <TextField fx:id="usernameField" prefHeight="32.0" promptText="Username"/>
+                <PasswordField fx:id="passwordField" prefHeight="32.0" promptText="Password"/>
+                <Button fx:id="primaryButton" mnemonicParsing="false" onAction="#onSubmit"
+                        prefHeight="32.0" text="Sign in"/>
+                <Label fx:id="statusLabel" styleClass="status-label" text=""/>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

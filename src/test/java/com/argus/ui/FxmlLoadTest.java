@@ -1,6 +1,8 @@
 package com.argus.ui;
 
 import com.argus.ui.controller.DashboardController;
+import com.argus.ui.controller.LockController;
+import com.argus.ui.controller.LoginController;
 import com.argus.ui.controller.TargetsController;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -44,6 +46,22 @@ class FxmlLoadTest {
         Parent root = loader.load();
         assertNotNull(root);
         assertTrue(loader.getController() instanceof TargetsController);
+    }
+
+    @Test
+    void loginLoads() throws IOException {
+        FXMLLoader loader = loader("login");
+        Parent root = loader.load();
+        assertNotNull(root);
+        assertTrue(loader.getController() instanceof LoginController);
+    }
+
+    @Test
+    void lockLoads() throws IOException {
+        FXMLLoader loader = loader("lock");
+        Parent root = loader.load();
+        assertNotNull(root);
+        assertTrue(loader.getController() instanceof LockController);
     }
 
     private static FXMLLoader loader(String name) {

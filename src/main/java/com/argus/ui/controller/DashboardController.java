@@ -3,6 +3,7 @@ package com.argus.ui.controller;
 import com.argus.ui.MainApp;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 
 import java.io.IOException;
@@ -12,6 +13,9 @@ public final class DashboardController {
 
     @FXML
     private Label statusLabel;
+
+    @FXML
+    private Button logoutButton;
 
     private MainApp main;
 
@@ -30,5 +34,10 @@ public final class DashboardController {
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR, "Cannot open targets view.").showAndWait();
         }
+    }
+
+    @FXML
+    private void onLogout() {
+        main.onLogout();
     }
 }

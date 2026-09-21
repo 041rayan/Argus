@@ -21,5 +21,9 @@
             <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
             <AnchorPane.topAnchor>104.0</AnchorPane.topAnchor>
         </Button>
+        <Button fx:id="logoutButton" mnemonicParsing="false" onAction="#onLogout" text="Log out">
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
+        </Button>
     </children>
 </AnchorPane>

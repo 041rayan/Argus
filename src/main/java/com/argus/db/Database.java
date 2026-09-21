@@ -11,6 +11,27 @@ import java.sql.Statement;
 /** SQLite connection factory: controlled path, per-connection pragmas, schema. */
 public final class Database {
 
+    private static final String AUDIT_TABLE = """
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                operator_id INTEGER REFERENCES operator(id),
+                action TEXT NOT NULL,
+                detail TEXT,
+                at TEXT NOT NULL
+            )""";
+
+    private static final String OPERATOR_TABLE = """
+            CREATE TABLE IF NOT EXISTS operator (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                auth_salt BLOB NOT NULL,
+                auth_hash BLOB NOT NULL,
+                vault_salt BLOB NOT NULL,
+                failed_attempts INTEGER NOT NULL DEFAULT 0,
+                locked_until TEXT,
+                created_at TEXT NOT NULL
+            )""";
+
     private static final String TARGET_TABLE = """
             CREATE TABLE IF NOT EXISTS target (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +66,8 @@ public final class Database {
             s.execute("PRAGMA busy_timeout=5000");
             s.execute("PRAGMA foreign_keys=ON");
             s.execute(TARGET_TABLE);
+            s.execute(OPERATOR_TABLE);
+            s.execute(AUDIT_TABLE);
         } catch (SQLException e) {
             c.close();
             throw e;
