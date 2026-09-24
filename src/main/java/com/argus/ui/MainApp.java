@@ -5,6 +5,7 @@ import com.argus.core.auth.LoginService;
 import com.argus.core.concurrency.IdleLockMonitor;
 import com.argus.db.AuditDAO;
 import com.argus.db.Database;
+import com.argus.ui.controller.AddApiKeyController;
 import com.argus.ui.controller.DashboardController;
 import com.argus.ui.controller.LockController;
 import com.argus.ui.controller.LoginController;
@@ -13,8 +14,10 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -110,6 +113,30 @@ public final class MainApp extends Application {
 
     public String currentUsername() {
         return currentUsername;
+    }
+
+    public long operatorId() {
+        return operatorId;
+    }
+
+    /** Null only while locked or logged out. */
+    public byte[] vaultKey() {
+        return vaultKey;
+    }
+
+    /** Secondary Stage: owner set, window-modal; controller holds it and closes it (JAVAFX.md). */
+    public void showAddApiKey() throws IOException {
+        FXMLLoader l = loader("apikeys");
+        Parent root = l.load();
+        Stage dialog = new Stage();
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.setTitle("API Keys");
+        dialog.setScene(new Scene(root));
+        applyCss(dialog.getScene());
+        AddApiKeyController controller = l.getController();
+        controller.init(dialog, this);
+        dialog.show();
     }
 
     private void startIdleMonitor() {

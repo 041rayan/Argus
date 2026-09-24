@@ -32,6 +32,15 @@ public final class Database {
                 created_at TEXT NOT NULL
             )""";
 
+    private static final String API_KEYS_TABLE = """
+            CREATE TABLE IF NOT EXISTS api_keys (
+                operator_id INTEGER NOT NULL REFERENCES operator(id),
+                provider TEXT NOT NULL COLLATE NOCASE,
+                encrypted_key BLOB NOT NULL,
+                iv BLOB NOT NULL,
+                PRIMARY KEY (operator_id, provider)
+            )""";
+
     private static final String TARGET_TABLE = """
             CREATE TABLE IF NOT EXISTS target (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,6 +77,7 @@ public final class Database {
             s.execute(TARGET_TABLE);
             s.execute(OPERATOR_TABLE);
             s.execute(AUDIT_TABLE);
+            s.execute(API_KEYS_TABLE);
         } catch (SQLException e) {
             c.close();
             throw e;

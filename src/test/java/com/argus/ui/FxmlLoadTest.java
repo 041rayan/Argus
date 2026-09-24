@@ -1,5 +1,6 @@
 package com.argus.ui;
 
+import com.argus.ui.controller.AddApiKeyController;
 import com.argus.ui.controller.DashboardController;
 import com.argus.ui.controller.LockController;
 import com.argus.ui.controller.LoginController;
@@ -62,6 +63,14 @@ class FxmlLoadTest {
         Parent root = loader.load();
         assertNotNull(root);
         assertTrue(loader.getController() instanceof LockController);
+    }
+
+    @Test
+    void apiKeysLoads() throws IOException {
+        FXMLLoader loader = loader("apikeys");
+        Parent root = loader.load();
+        assertNotNull(root);
+        assertTrue(loader.getController() instanceof AddApiKeyController);
     }
 
     private static FXMLLoader loader(String name) {
