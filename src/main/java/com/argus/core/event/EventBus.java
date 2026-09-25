@@ -47,9 +47,14 @@ public final class EventBus implements AutoCloseable {
         }
     }
 
+    /** Delivers whatever is still queued, then stops the dispatcher. */
     @Override
     public void close() {
         running.set(false);
-        dispatcher.interrupt(); // wakes the dispatcher if it is parked in take()
+        ScanEvent pending;
+        while ((pending = queue.poll()) != null) {
+            listener.accept(pending);
+        }
+        dispatcher.interrupt(); // wake it if it is parked in take()
     }
 }
