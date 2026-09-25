@@ -23,6 +23,8 @@
                 <PasswordField fx:id="passwordField" prefHeight="32.0" promptText="Password"/>
                 <Button fx:id="primaryButton" mnemonicParsing="false" onAction="#onSubmit"
                         prefHeight="32.0" text="Sign in"/>
+                <Button fx:id="switchModeButton" mnemonicParsing="false" onAction="#onToggleMode"
+                        prefHeight="32.0" text="Create account"/>
                 <Label fx:id="statusLabel" styleClass="status-label" text=""/>
             </children>
         </VBox>

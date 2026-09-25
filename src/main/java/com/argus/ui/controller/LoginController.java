@@ -33,6 +33,8 @@ public final class LoginController {
     @FXML
     private Button primaryButton;
     @FXML
+    private Button switchModeButton;
+    @FXML
     private Label statusLabel;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
@@ -44,6 +46,7 @@ public final class LoginController {
     private MainApp main;
     private LoginService service;
     private boolean createMode;
+    private boolean firstRun;
 
     /** Wired by MainApp after the FXML load; first-run check runs off-thread. */
     public void setMain(MainApp main) {
@@ -53,7 +56,8 @@ public final class LoginController {
         worker.execute(() -> {
             try {
                 boolean hasAccounts = service.hasAccounts();
-                Platform.runLater(() -> setCreateMode(!hasAccounts));
+                firstRun = !hasAccounts;
+                Platform.runLater(() -> setCreateMode(firstRun));
             } catch (SQLException e) {
                 Platform.runLater(() -> statusLabel.setText("Database failure."));
             }
@@ -78,7 +82,12 @@ public final class LoginController {
                 }
                 LoginService.LoginResult result = service.login(username, password);
                 Platform.runLater(() -> onResult(result));
-            } catch (SQLException | IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
+                Platform.runLater(() -> {
+                    statusLabel.setText("Username already taken.");
+                    primaryButton.setDisable(false);
+                });
+            } catch (SQLException e) {
                 Platform.runLater(() -> {
                     statusLabel.setText("Database failure.");
                     primaryButton.setDisable(false);
@@ -102,10 +111,23 @@ public final class LoginController {
     private void setCreateMode(boolean create) {
         this.createMode = create;
         if (create) {
-            modeLabel.setText("First run — create the operator account.");
+            modeLabel.setText(firstRun
+                    ? "First run — create the operator account."
+                    : "New operator — choose a username and password.");
             primaryButton.setText("Create account");
+            switchModeButton.setText("Back to sign in");
         } else {
             modeLabel.setText("Sign in to continue.");
+            primaryButton.setText("Sign in");
+            switchModeButton.setText("Create account");
         }
+    }
+
+    @FXML
+    private void onToggleMode() {
+        setCreateMode(!createMode);
+        usernameField.clear();
+        passwordField.clear();
+        statusLabel.setText("");
     }
 }
