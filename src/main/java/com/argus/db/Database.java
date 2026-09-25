@@ -51,6 +51,16 @@ public final class Database {
                 created_at TEXT NOT NULL
             )""";
 
+    private static final String API_CACHE_TABLE = """
+            CREATE TABLE IF NOT EXISTS api_cache (
+                provider TEXT NOT NULL,
+                resource TEXT NOT NULL,
+                response_json TEXT NOT NULL,
+                fetched_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                PRIMARY KEY (provider, resource)
+            )""";
+
     private static final String SCAN_TABLE = """
             CREATE TABLE IF NOT EXISTS scan (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,6 +151,7 @@ public final class Database {
             s.execute(PORT_HOST_INDEX);
             s.execute(FINDING_TABLE);
             s.execute(FINDING_SCAN_INDEX);
+            s.execute(API_CACHE_TABLE);
         } catch (SQLException e) {
             c.close();
             throw e;

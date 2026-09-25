@@ -89,6 +89,11 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>docs/fixtures</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
