@@ -21,3 +21,4 @@ target/
 .idea/
 *.log
 .codegraph/
+example.com.json

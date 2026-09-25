@@ -51,6 +51,62 @@ public final class Database {
                 created_at TEXT NOT NULL
             )""";
 
+    private static final String SCAN_TABLE = """
+            CREATE TABLE IF NOT EXISTS scan (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                operator_id INTEGER REFERENCES operator(id),
+                target TEXT NOT NULL,
+                profile TEXT NOT NULL,
+                status TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                error_message TEXT
+            )""";
+
+    private static final String HOST_TABLE = """
+            CREATE TABLE IF NOT EXISTS host (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scan_id INTEGER NOT NULL REFERENCES scan(id),
+                subdomain TEXT NOT NULL,
+                ip TEXT NOT NULL,
+                is_alive INTEGER NOT NULL,
+                country TEXT,
+                asn TEXT,
+                org TEXT
+            )""";
+
+    private static final String HOST_SCAN_INDEX = """
+            CREATE INDEX IF NOT EXISTS idx_host_scan_id ON host(scan_id)""";
+
+    private static final String PORT_TABLE = """
+            CREATE TABLE IF NOT EXISTS port (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                host_id INTEGER NOT NULL REFERENCES host(id),
+                port_number INTEGER NOT NULL,
+                protocol TEXT NOT NULL DEFAULT 'TCP',
+                service TEXT,
+                version TEXT,
+                banner TEXT,
+                title TEXT
+            )""";
+
+    private static final String PORT_HOST_INDEX = """
+            CREATE INDEX IF NOT EXISTS idx_port_host_id ON port(host_id)""";
+
+    private static final String FINDING_TABLE = """
+            CREATE TABLE IF NOT EXISTS finding (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scan_id INTEGER NOT NULL REFERENCES scan(id),
+                host_id INTEGER REFERENCES host(id),
+                module_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                detail_json TEXT
+            )""";
+
+    private static final String FINDING_SCAN_INDEX = """
+            CREATE INDEX IF NOT EXISTS idx_finding_scan_id ON finding(scan_id)""";
+
     private final Path file;
 
     public Database(Path file) {
@@ -78,6 +134,13 @@ public final class Database {
             s.execute(OPERATOR_TABLE);
             s.execute(AUDIT_TABLE);
             s.execute(API_KEYS_TABLE);
+            s.execute(SCAN_TABLE);
+            s.execute(HOST_TABLE);
+            s.execute(HOST_SCAN_INDEX);
+            s.execute(PORT_TABLE);
+            s.execute(PORT_HOST_INDEX);
+            s.execute(FINDING_TABLE);
+            s.execute(FINDING_SCAN_INDEX);
         } catch (SQLException e) {
             c.close();
             throw e;
