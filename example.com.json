@@ -1,0 +1,6 @@
+{
+  "target" : "example.com",
+  "scannedAt" : null,
+  "entryPoints" : [ ],
+  "findings" : [ ]
+}

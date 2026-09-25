@@ -82,7 +82,12 @@ public final class ExportController {
         worker.execute(() -> {
             try {
                 List<Target> targets = new TargetDAO(Database.inUserHome()).list();
-                Platform.runLater(() -> targetCombo.getItems().setAll(targets));
+                Platform.runLater(() -> {
+                    targetCombo.getItems().setAll(targets);
+                    if (targets.isEmpty()) {
+                        targetCombo.setPromptText("No targets — add one in Targets");
+                    }
+                });
             } catch (SQLException e) {
                 Platform.runLater(() -> statusLabel.setText("Database failure."));
             }
