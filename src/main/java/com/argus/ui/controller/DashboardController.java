@@ -60,6 +60,11 @@ public final class DashboardController {
     private MainApp main;
     private ScanRunner runner;
     private int hostCount;
+    private int portCount;
+
+    private String countsText() {
+        return hostCount + " host(s) resolved · " + portCount + " open port(s)";
+    }
 
     @FXML
     private void initialize() {
@@ -128,6 +133,7 @@ public final class DashboardController {
             return;
         }
         hostCount = 0;
+        portCount = 0;
         EventBus events = new EventBus();
         events.subscribe(this::onScanEvent);
         ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events);
@@ -144,7 +150,10 @@ public final class DashboardController {
                 scanStatusLabel.setText("Scanning " + s.target() + "…");
             } else if (e instanceof ScanEvent.HostFound) {
                 hostCount++;
-                scanStatusLabel.setText(hostCount + " host(s) resolved");
+                scanStatusLabel.setText(countsText());
+            } else if (e instanceof ScanEvent.PortFound) {
+                portCount++;
+                scanStatusLabel.setText(countsText());
             } else if (e instanceof ScanEvent.StageProgress p) {
                 scanStatusLabel.setText(p.stage() + ": " + p.done() + " subdomains");
             } else if (e instanceof ScanEvent.ProviderDegraded d) {

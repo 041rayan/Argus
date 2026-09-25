@@ -1,6 +1,7 @@
 package com.argus.ui.controller;
 
 import com.argus.core.model.Target;
+import com.argus.core.scanner.PortList;
 import com.argus.db.Database;
 import com.argus.db.TargetDAO;
 import com.argus.ui.MainApp;
@@ -15,12 +16,14 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -74,11 +77,15 @@ public final class TargetsController {
             new Alert(Alert.AlertType.WARNING, "Label and domain are required.").showAndWait();
             return;
         }
+        String profile = profileCombo.getValue();
+        if ("custom".equals(profile) && !editCustomPorts()) {
+            return;
+        }
         List<String> scope = Arrays.stream(scopeField.getText().split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-        Target target = new Target(null, label, domain, scope, profileCombo.getValue(), Instant.now());
+        Target target = new Target(null, label, domain, scope, profile, Instant.now());
         executor.execute(() -> {
             try {
                 dao.insert(target);
@@ -92,6 +99,40 @@ public final class TargetsController {
                 Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, "Database failure.").showAndWait());
             }
         });
+    }
+
+    /** Custom profile: collect the port list, save it, false cancels the target save. */
+    private boolean editCustomPorts() {
+        TextInputDialog dialog = new TextInputDialog(PortList.customText());
+        dialog.setHeaderText("Custom port list — comma-separated, 1–65535");
+        Optional<String> answer = dialog.showAndWait();
+        if (answer.isEmpty()) {
+            return false;
+        }
+        List<Integer> ports = Arrays.stream(answer.get().split("[,\\s]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> {
+                    try {
+                        return Integer.parseInt(s);
+                    } catch (NumberFormatException e) {
+                        return -1;
+                    }
+                })
+                .filter(p -> p >= 1 && p <= 65535)
+                .distinct()
+                .toList();
+        if (ports.isEmpty()) {
+            new Alert(Alert.AlertType.WARNING, "No valid ports — list unchanged.").showAndWait();
+            return false;
+        }
+        try {
+            PortList.saveCustom(ports);
+            return true;
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Cannot write custom port list.").showAndWait();
+            return false;
+        }
     }
 
     @FXML
