@@ -73,6 +73,15 @@ public final class DashboardController {
     }
 
     @FXML
+    private void onExport() {
+        try {
+            main.showExport();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Cannot open export view.").showAndWait();
+        }
+    }
+
+    @FXML
     private void onLogout() {
         main.onLogout();
     }
