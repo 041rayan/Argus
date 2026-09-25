@@ -45,9 +45,13 @@
             <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
             <AnchorPane.topAnchor>276.0</AnchorPane.topAnchor>
         </Button>
+        <Button mnemonicParsing="false" text="Results" onAction="#onShowResults">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.topAnchor>316.0</AnchorPane.topAnchor>
+        </Button>
         <Label fx:id="apiKeysLabel" styleClass="status-label" text="">
             <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>324.0</AnchorPane.topAnchor>
+            <AnchorPane.topAnchor>364.0</AnchorPane.topAnchor>
         </Label>
         <Button fx:id="logoutButton" mnemonicParsing="false" onAction="#onLogout" text="Log out">
             <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>

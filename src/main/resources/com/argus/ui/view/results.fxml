@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<AnchorPane fx:id="root"
+            prefHeight="640.0" prefWidth="900.0"
+            styleClass="root-pane"
+            xmlns="http://javafx.com/javafx/21.0.8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.argus.ui.controller.ResultsController">
+    <children>
+        <Label styleClass="title-label" text="Scan results">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
+        </Label>
+
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+            <children>
+                <ComboBox fx:id="scanCombo" prefHeight="32.0" prefWidth="380.0"
+                          promptText="Scan" HBox.hgrow="ALWAYS"/>
+                <DatePicker fx:id="dateFilter" prefHeight="32.0" promptText="Any date"/>
+            </children>
+        </HBox>
+
+        <TextField fx:id="searchField" promptText="Search hosts…">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
+        </TextField>
+
+        <TableView fx:id="hostsTable">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
+            <AnchorPane.topAnchor>158.0</AnchorPane.topAnchor>
+            <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
+            <columns>
+                <TableColumn prefWidth="400.0" text="Subdomain">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="subdomain"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="230.0" text="IP">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="ip"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="110.0" text="Status">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="alive"/>
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
+        </TableView>
+
+        <Button mnemonicParsing="false" onAction="#onBack" text="Back">
+            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
+            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
+        </Button>
+    </children>
+</AnchorPane>

@@ -7,8 +7,11 @@ import com.argus.core.model.ScanSummary;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,8 +68,7 @@ public final class ScanDAO {
     }
 
     /** Cascade delete: ports, findings, hosts, then the scan — one transaction. */
-    public boolean deleteScan(long scanId) throws SQLException {
-        try (Connection c = db.connect()) {
+    public boolean deleteScan(long scanId) throws SQLException {        try (Connection c = db.connect()) {
             c.setAutoCommit(false);
             try {
                 int deleted = delete(c,
@@ -81,6 +83,31 @@ public final class ScanDAO {
                 throw e;
             }
         }
+    }
+
+    /** All scans, newest first (results/history view). */
+    public List<ScanSummary> list() throws SQLException {
+        List<ScanSummary> out = new ArrayList<>();
+        try (Connection c = db.connect();
+             PreparedStatement p = c.prepareStatement("SELECT * FROM scan ORDER BY id DESC");
+             ResultSet rs = p.executeQuery()) {
+            while (rs.next()) {
+                out.add(scanRow(rs));
+            }
+        }
+        return out;
+    }
+
+    private static ScanSummary scanRow(ResultSet rs) throws SQLException {
+        String finished = rs.getString("finished_at");
+        return new ScanSummary(
+                rs.getLong("id"),
+                rs.getLong("operator_id"),
+                rs.getString("target"),
+                rs.getString("profile"),
+                ScanSummary.Status.valueOf(rs.getString("status")),
+                Instant.parse(rs.getString("started_at")),
+                finished == null ? null : Instant.parse(finished));
     }
 
     private static long insertScan(Connection c, ScanSummary s) throws SQLException {

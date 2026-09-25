@@ -3,6 +3,7 @@ package com.argus.ui;
 import com.argus.ui.controller.AddApiKeyController;
 import com.argus.ui.controller.DashboardController;
 import com.argus.ui.controller.ExportController;
+import com.argus.ui.controller.ResultsController;
 import com.argus.ui.controller.LockController;
 import com.argus.ui.controller.LoginController;
 import com.argus.ui.controller.TargetsController;
@@ -80,6 +81,14 @@ class FxmlLoadTest {
         Parent root = loader.load();
         assertNotNull(root);
         assertTrue(loader.getController() instanceof ExportController);
+    }
+
+    @Test
+    void resultsLoads() throws IOException {
+        FXMLLoader loader = loader("results");
+        Parent root = loader.load();
+        assertNotNull(root);
+        assertTrue(loader.getController() instanceof ResultsController);
     }
 
     private static FXMLLoader loader(String name) {

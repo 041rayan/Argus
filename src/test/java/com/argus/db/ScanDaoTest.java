@@ -105,6 +105,22 @@ class ScanDaoTest {
         }
     }
 
+    @Test
+    void listReturnsNewestFirstWithParsedFields() throws SQLException {
+        long first = dao.insertScanResults(scan(ScanSummary.Status.COMPLETED), List.of(), List.of(), List.of());
+        long second = dao.insertScanResults(scan(ScanSummary.Status.CANCELLED), List.of(), List.of(), List.of());
+
+        List<ScanSummary> scans = dao.list();
+        assertEquals(2, scans.size());
+        assertEquals(second, scans.get(0).id(), "newest first");
+        assertEquals(first, scans.get(1).id());
+        ScanSummary s = scans.get(0);
+        assertEquals(ScanSummary.Status.CANCELLED, s.status());
+        assertEquals("example.com", s.target());
+        assertEquals("quick", s.profile());
+        assertEquals(Instant.parse("2026-09-25T00:05:00Z"), s.finishedAt());
+    }
+
     /** Raw JDBC reader: the read-side DAOs deliberately don't exist yet. */
     private Connection open() throws SQLException {
         return DriverManager.getConnection("jdbc:sqlite:" + tmp.resolve("argus-test.db"));

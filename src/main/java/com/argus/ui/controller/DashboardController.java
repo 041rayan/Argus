@@ -179,6 +179,15 @@ public final class DashboardController {
     }
 
     @FXML
+    private void onShowResults() {
+        try {
+            main.showResults();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Cannot open results view.").showAndWait();
+        }
+    }
+
+    @FXML
     private void onExport() {
         try {
             main.showExport();

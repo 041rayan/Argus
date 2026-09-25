@@ -9,6 +9,7 @@ import com.argus.ui.controller.AddApiKeyController;
 import com.argus.ui.controller.DashboardController;
 import com.argus.ui.controller.ExportController;
 import com.argus.ui.controller.LockController;
+import com.argus.ui.controller.ResultsController;
 import com.argus.ui.controller.LoginController;
 import com.argus.ui.controller.TargetsController;
 import javafx.application.Application;
@@ -83,6 +84,15 @@ public final class MainApp extends Application {
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
         ExportController controller = l.getController();
+        controller.setMain(this);
+        primaryStage.setScene(scene);
+    }
+
+    public void showResults() throws IOException {
+        FXMLLoader l = loader("results");
+        Scene scene = new Scene(l.load(), 900, 640);
+        applyCss(scene);
+        ResultsController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
     }
