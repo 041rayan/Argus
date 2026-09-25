@@ -84,11 +84,13 @@ class ScanRunnerTest {
     @Test
     void fullRunEmitsHostsPersistsScanAndFinishes() throws Exception {
         Function<String, Optional<String>> resolver =
-                h -> h.equals("www.example.com") ? Optional.of("93.184.216.34") : Optional.empty();
-        Target target = new Target(null, "Lab", "example.com", List.of(), "quick", Instant.now());
+                h -> h.equals("www.example.com") ? Optional.of("127.0.0.1") : Optional.empty();
+        Target target = new Target(null, "Lab", "example.com", List.of("127.0.0.1/32"),
+                "quick", Instant.now());
+        int httpPort = server.getAddress().getPort();
 
         ScanRunner runner = new ScanRunner(target, 1, events,
-                new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db);
+                new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort));
         try (runner) {
             runner.run();
             assertTrue(finishedLatch.await(5, TimeUnit.SECONDS), "ScanFinished never arrived");
@@ -103,8 +105,19 @@ class ScanRunnerTest {
             assertEquals(hostEvents.get(), count(c, "host"),
                     "one host row per resolved subdomain");
             assertEquals(1, count(c, "host WHERE is_alive = 1"));
-            assertEquals(0, count(c, "port"));
+            assertEquals(1, count(c, "port"), "one row for the listening mock server");
+            assertEquals(httpPort, scalarInt(c, "SELECT port_number FROM port"));
+            assertEquals("", scalar(c, "SELECT banner FROM port"),
+                    "ephemeral port is not a web/raw port, so the banner stage passes it through");
             assertEquals(0, count(c, "finding"));
+        }
+    }
+
+    private static int scalarInt(Connection c, String sql) throws java.sql.SQLException {
+        try (var s = c.createStatement();
+             ResultSet rs = s.executeQuery(sql)) {
+            rs.next();
+            return rs.getInt(1);
         }
     }
 
