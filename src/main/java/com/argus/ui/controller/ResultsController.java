@@ -197,6 +197,8 @@ public final class ResultsController {
             return true;
         }
         String q = query.toLowerCase();
-        return row.getSubdomain().toLowerCase().contains(q) || row.getIp().toLowerCase().contains(q);
+        return row.getSubdomain().toLowerCase().contains(q) || row.getIp().toLowerCase().contains(q)
+                || row.getCountry().toLowerCase().contains(q) || row.getAsn().toLowerCase().contains(q)
+                || row.getOrg().toLowerCase().contains(q);
     }
 }

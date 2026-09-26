@@ -20,6 +20,6 @@ mvn verify
 ## Development API key fallback
 
 For development only, keys may come from environment variables instead of the
-encrypted vault: `ARGUS_VT_KEY` (VirusTotal) and `ARGUS_SHODAN_KEY` (Shodan).
+encrypted vault: `ARGUS_VT_KEY` (VirusTotal).
 A convenience for hacking on the pipeline — never a substitute for the vault,
 and never commit a value.

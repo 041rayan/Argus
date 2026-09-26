@@ -3,9 +3,14 @@ package com.argus.core.pipeline;
 import com.argus.core.api.CrtshClient;
 import com.argus.core.api.IpApiClient;
 import com.argus.core.api.KevClient;
+import com.argus.core.api.VtClient;
 import com.argus.core.api.dto.IpApiResult;
+import com.argus.core.api.dto.VtIpResult;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
+import com.argus.core.export.ExportService;
+import com.argus.core.export.ExportService.EntryPoint;
+import com.argus.core.json.Json;
 import com.argus.core.kev.KevMatcher;
 import com.argus.core.model.Finding;
 import com.argus.core.model.Host;
@@ -16,11 +21,14 @@ import com.argus.core.scanner.PortList;
 import com.argus.db.ApiCacheDAO;
 import com.argus.db.Database;
 import com.argus.db.ScanDAO;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,31 +72,35 @@ public final class ScanRunner implements AutoCloseable {
     private final Pipeline pipeline;
     private final ScanDAO scanDao;
     private final IpApiClient ipApi;
+    private final VtClient vtClient; // null = no key configured (API.md no-key law)
     private final ExecutorService dbWriter = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "db-writer");
         t.setDaemon(true);
         return t;
     });
 
-    public ScanRunner(Target target, long operatorId, EventBus events) {
+    public ScanRunner(Target target, long operatorId, EventBus events, byte[] vtKey) {
         this(target, operatorId, events,
                 new CrtshClient(new ApiCacheDAO(Database.inUserHome())),
                 DnsResolveModule.SYSTEM_RESOLVER,
                 Database.inUserHome(),
                 PortList.forProfile(target.profile()),
                 new KevMatcher(new KevClient(new ApiCacheDAO(Database.inUserHome())).catalog()),
-                new IpApiClient(new ApiCacheDAO(Database.inUserHome())));
+                new IpApiClient(new ApiCacheDAO(Database.inUserHome())),
+                vtKey == null ? null
+                        : new VtClient(new ApiCacheDAO(Database.inUserHome()), vtKey));
     }
 
     /** Test seam: injected clients, resolver, database, ports and catalog stay offline. */
     ScanRunner(Target target, long operatorId, EventBus events,
                CrtshClient client, Function<String, Optional<String>> resolver, Database db,
-               List<Integer> ports, KevMatcher matcher, IpApiClient ipApi) {
+               List<Integer> ports, KevMatcher matcher, IpApiClient ipApi, VtClient vtClient) {
         this.target = target;
         this.operatorId = operatorId;
         this.events = events;
         this.scanDao = new ScanDAO(db);
         this.ipApi = ipApi;
+        this.vtClient = vtClient;
 
         TargetContext ctx = TargetContext.of(target);
         CrtshEnumModule enumModule = new CrtshEnumModule(client, subdomains, events, token);
@@ -180,6 +192,7 @@ public final class ScanRunner implements AutoCloseable {
         // API.md priority order both need the finished host set
         if (status == ScanSummary.Status.COMPLETED && !token.isCancelled()) {
             enrich();
+            enrichVt();
         }
 
         List<Host> snapshot = List.copyOf(collected);
@@ -250,6 +263,91 @@ public final class ScanRunner implements AutoCloseable {
         return r.org() == null || r.org().isBlank() ? orEmpty(r.isp()) : r.org();
     }
 
+    /**
+     * Post-pipeline VT reputation (API.md): the top-10 priority-score IPs
+     * each get one verdict; flagged ones become VT_FLAGGED findings per open
+     * port. No client = no key = skipped instantly; degradation publishes an
+     * event and costs findings, never the scan.
+     */
+    private void enrichVt() {
+        if (vtClient == null) {
+            return;
+        }
+        try {
+            Map<String, String> nameToIp = new HashMap<>();
+            Map<String, Set<String>> namesByIp = new HashMap<>();
+            for (Host h : collected) {
+                if (h.alive() && h.ip() != null && !h.ip().isBlank()) {
+                    nameToIp.put(h.subdomain(), h.ip());
+                    nameToIp.put(h.ip(), h.ip());
+                    Set<String> names = namesByIp.computeIfAbsent(h.ip(),
+                            k -> new LinkedHashSet<>());
+                    names.add(h.subdomain());
+                    names.add(h.ip());
+                }
+            }
+            for (String ip : priorityIps(nameToIp, 10)) {
+                vtClient.lookup(ip).ifPresent(r -> findings.addAll(
+                        vtFindings(ip, r, namesByIp.get(ip), List.copyOf(scanned))));
+            }
+        } catch (RuntimeException e) {
+            LOG.warn("vt enrichment failed: {}", e.getMessage());
+        }
+        if (vtClient.degraded()) {
+            events.publish(new ScanEvent.ProviderDegraded(VtClient.PROVIDER,
+                    vtClient.degradedStatus()));
+        }
+    }
+
+    /** Unique IPs behind the highest-scored entry points, capped (API.md ordering). */
+    private List<String> priorityIps(Map<String, String> nameToIp, int topN) {
+        List<String> out = new ArrayList<>();
+        for (EntryPoint e : ExportService.entryPoints(List.copyOf(scanned),
+                List.copyOf(findings))) {
+            if (out.size() >= topN) {
+                break;
+            }
+            String host = e.hostPort().substring(0, e.hostPort().lastIndexOf(':'));
+            String ip = nameToIp.get(host);
+            if (ip != null && !out.contains(ip)) {
+                out.add(ip);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * VT_FLAGGED per open port on hosts living on the queried IP (DB.md).
+     * Severity: malicious >= 10 HIGH, 1-9 MEDIUM, suspicious-only LOW.
+     * Clean verdicts produce nothing — noise is not a finding.
+     */
+    static List<Finding> vtFindings(String ip, VtIpResult result, Set<String> names,
+                                    List<PortResult> ports) {
+        if (result.malicious() == 0 && result.suspicious() == 0) {
+            return List.of();
+        }
+        String severity = result.malicious() >= 10 ? "HIGH"
+                : result.malicious() > 0 ? "MEDIUM" : "LOW";
+        List<Finding> out = new ArrayList<>();
+        for (PortResult p : ports) {
+            if (p.host() == null || !names.contains(p.host())) {
+                continue;
+            }
+            try {
+                String detail = Json.MAPPER.writeValueAsString(Map.of(
+                        "host", p.host(),
+                        "port", p.port(),
+                        "ip", ip,
+                        "malicious", result.malicious(),
+                        "suspicious", result.suspicious()));
+                out.add(new Finding(0, null, VtClient.PROVIDER, "VT_FLAGGED", severity, detail));
+            } catch (JsonProcessingException e) {
+                LOG.warn("vt finding not serializable: {}", e.getMessage());
+            }
+        }
+        return out;
+    }
+
     private static String orEmpty(String s) {
         return s == null ? "" : s;
     }
@@ -272,5 +370,8 @@ public final class ScanRunner implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
         events.close();
+        if (vtClient != null) {
+            vtClient.close(); // stops the rate-limiter thread
+        }
     }
 }

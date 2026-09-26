@@ -19,8 +19,25 @@ public final class HostRow {
         return host.ip();
     }
 
+    public String getCountry() {
+        return orEmpty(host.country());
+    }
+
+    public String getAsn() {
+        return orEmpty(host.asn());
+    }
+
+    public String getOrg() {
+        return orEmpty(host.org());
+    }
+
     public String getAlive() {
         return host.alive() ? "alive" : "dead";
+    }
+
+    /** DB columns are nullable; the table and the search want "". */
+    private static String orEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     public Host host() {

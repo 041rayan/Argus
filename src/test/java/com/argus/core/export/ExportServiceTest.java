@@ -1,5 +1,6 @@
 package com.argus.core.export;
 
+import com.argus.core.model.Finding;
 import com.argus.core.model.PortResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -90,6 +91,24 @@ class ExportServiceTest {
         assertEquals("-", points.get(2).severity());
         assertEquals("-", points.get(2).kev());
         assertEquals("-", points.get(2).service());
+    }
+
+    @Test
+    void virusTotalVerdictAddsTenFromThreeEngines() {
+        PortResult odd = new PortResult("h.example.com", 9999, "tcp", "", "", "", "", true);
+        Finding flagged = new Finding(0, null, "virustotal", "VT_FLAGGED", "MEDIUM",
+                "{\"host\":\"h.example.com\",\"port\":9999,\"ip\":\"203.0.113.7\","
+                        + "\"malicious\":3,\"suspicious\":1}");
+        Finding weak = new Finding(0, null, "virustotal", "VT_FLAGGED", "LOW",
+                "{\"host\":\"h.example.com\",\"port\":9999,\"ip\":\"203.0.113.7\","
+                        + "\"malicious\":2,\"suspicious\":1}");
+
+        assertEquals(10,
+                ExportService.entryPoints(List.of(odd), List.of(flagged)).get(0).score(),
+                "3+ engines flag it: CORE.md +10");
+        assertEquals(0,
+                ExportService.entryPoints(List.of(odd), List.of(weak)).get(0).score(),
+                "2 engines: verdict kept, weight not granted");
     }
 
     @Test

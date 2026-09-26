@@ -111,8 +111,8 @@ public final class ExportService {
 
     /**
      * Signal weights (CORE.md): each KEV verdict on the port contributes its
-     * weight, ransomware +10, internet-facing web or admin service +10.
-     * VirusTotal (+10) and Shodan (+5) join here when enrich ships.
+     * weight, ransomware +10, VirusTotal verdicts from 3+ engines +10,
+     * internet-facing web or admin service +10.
      */
     private static int score(PortResult port, List<Finding> own) {
         int score = 0;
@@ -129,6 +129,9 @@ public final class ExportService {
             }
             if (d.path("ransomware").asBoolean(false)) {
                 score += 10;
+            }
+            if (d.path("malicious").asInt(0) >= 3) {
+                score += 10; // VT_FLAGGED: 3+ engines flag it (CORE.md)
             }
         }
         if (isWebOrAdmin(port.port())) {

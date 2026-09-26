@@ -44,17 +44,32 @@
             <AnchorPane.topAnchor>158.0</AnchorPane.topAnchor>
             <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
             <columns>
-                <TableColumn prefWidth="400.0" text="Subdomain">
+                <TableColumn prefWidth="240.0" text="Subdomain">
                     <cellValueFactory>
                         <PropertyValueFactory property="subdomain"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="230.0" text="IP">
+                <TableColumn prefWidth="130.0" text="IP">
                     <cellValueFactory>
                         <PropertyValueFactory property="ip"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="110.0" text="Status">
+                <TableColumn prefWidth="100.0" text="Country">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="country"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="150.0" text="ASN">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="asn"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="150.0" text="Org">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="org"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="70.0" text="Status">
                     <cellValueFactory>
                         <PropertyValueFactory property="alive"/>
                     </cellValueFactory>

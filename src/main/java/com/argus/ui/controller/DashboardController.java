@@ -100,8 +100,8 @@ public final class DashboardController {
             try {
                 Set<String> providers =
                         new ApiKeysDAO(Database.inUserHome()).configuredProviders(main.operatorId());
-                String line = "VirusTotal: " + (providers.contains("VirusTotal") ? "configured" : "not configured")
-                        + " · Shodan: " + (providers.contains("Shodan") ? "configured" : "not configured");
+                String line = "VirusTotal: "
+                        + (providers.contains("VirusTotal") ? "configured" : "not configured");
                 Platform.runLater(() -> apiKeysLabel.setText(line));
             } catch (SQLException e) {
                 Platform.runLater(() -> apiKeysLabel.setText("Key status unavailable."));
@@ -147,7 +147,8 @@ public final class DashboardController {
         coordinator.execute(() -> {
             try {
                 // construction may refresh the KEV catalog (network) — FX thread stays free
-                ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events);
+                ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events,
+                        main.vaultKey());
                 runner = newRunner;
                 newRunner.run();
             } catch (RuntimeException e) {

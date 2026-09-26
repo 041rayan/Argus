@@ -32,7 +32,7 @@ import java.util.concurrent.Executors;
 public final class AddApiKeyController {
 
     private static final String VIRUSTOTAL = "VirusTotal";
-    private static final String[] PROVIDERS = {VIRUSTOTAL, "Shodan"};
+    private static final String[] PROVIDERS = {VIRUSTOTAL};
 
     @FXML
     private Label statusLabel;

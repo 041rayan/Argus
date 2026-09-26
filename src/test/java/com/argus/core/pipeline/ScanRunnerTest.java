@@ -3,6 +3,8 @@ package com.argus.core.pipeline;
 import com.argus.core.api.CrtshClient;
 import com.argus.core.api.IpApiClient;
 import com.argus.core.api.KevClient;
+import com.argus.core.api.VtClient;
+import com.argus.core.concurrency.TokenBucket;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
 import com.argus.core.kev.KevMatcher;
@@ -23,6 +25,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -103,7 +106,7 @@ class ScanRunnerTest {
         ScanRunner runner = new ScanRunner(target, 1, events,
                 new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort),
                 new KevMatcher(KevClient.bundled()),
-                new IpApiClient(new ApiCacheDAO(db), baseUrl));
+                new IpApiClient(new ApiCacheDAO(db), baseUrl), null);
         try (runner) {
             runner.run();
             assertTrue(finishedLatch.await(5, TimeUnit.SECONDS), "ScanFinished never arrived");
@@ -129,6 +132,44 @@ class ScanRunnerTest {
             assertEquals("Test Org", scalar(c, "SELECT org FROM host WHERE is_alive = 1"));
             assertEquals("", scalar(c, "SELECT country FROM host WHERE is_alive = 0"),
                     "dead hosts have no IP and are not enriched");
+        }
+    }
+
+    @Test
+    void vtEnrichmentFlagsThePriorityIp() throws Exception {
+        server.createContext("/api/v3/ip_addresses/", exchange -> {
+            byte[] bytes = ("{\"data\":{\"attributes\":{\"last_analysis_stats\":"
+                    + "{\"malicious\":12,\"suspicious\":4}}}}").getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        Function<String, Optional<String>> resolver =
+                h -> h.equals("www.example.com") ? Optional.of("127.0.0.1") : Optional.empty();
+        Target target = new Target(null, "Lab", "example.com", List.of("127.0.0.1/32"),
+                "quick", Instant.now());
+        int httpPort = server.getAddress().getPort();
+
+        ScanRunner runner = new ScanRunner(target, 1, events,
+                new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort),
+                new KevMatcher(KevClient.bundled()),
+                new IpApiClient(new ApiCacheDAO(db), baseUrl),
+                new VtClient(new ApiCacheDAO(db), "test-key".getBytes(StandardCharsets.UTF_8),
+                        baseUrl, new TokenBucket(Duration.ofSeconds(10))));
+        try (runner) {
+            runner.run();
+            assertTrue(finishedLatch.await(5, TimeUnit.SECONDS), "ScanFinished never arrived");
+        }
+
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + tmp.resolve("argus-test.db"))) {
+            assertEquals(1, count(c, "finding WHERE type = 'VT_FLAGGED'"),
+                    "one flag per open port on the priority-score IP");
+            assertEquals("HIGH", scalar(c, "SELECT severity FROM finding"),
+                    "12 engines >= 10 → HIGH");
+            assertEquals(12, scalarInt(c,
+                    "SELECT json_extract(detail_json,'$.malicious') FROM finding"));
+            assertEquals("127.0.0.1", scalar(c,
+                    "SELECT json_extract(detail_json,'$.ip') FROM finding"));
         }
     }
 
