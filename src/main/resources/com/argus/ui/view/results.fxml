@@ -62,6 +62,11 @@
             </columns>
         </TableView>
 
+        <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#onDelete" text="Delete scan">
+            <AnchorPane.leftAnchor>236.0</AnchorPane.leftAnchor>
+            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
+        </Button>
+
         <Button mnemonicParsing="false" onAction="#onEntryPoints" text="Entry Points">
             <AnchorPane.leftAnchor>110.0</AnchorPane.leftAnchor>
             <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>

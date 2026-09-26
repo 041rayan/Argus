@@ -10,8 +10,11 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.ListCell;
@@ -23,16 +26,12 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Results view: pick a scan (optionally filtered by date), hosts table with search. */
 public final class ResultsController {
-
-    private static final DateTimeFormatter STAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     @FXML
     private ComboBox<ScanSummary> scanCombo;
@@ -42,6 +41,8 @@ public final class ResultsController {
     private TextField searchField;
     @FXML
     private TableView<HostRow> hostsTable;
+    @FXML
+    private Button deleteButton;
 
     private final ObservableList<ScanSummary> scans = FXCollections.observableArrayList();
     private final ObservableList<HostRow> rows = FXCollections.observableArrayList();
@@ -65,13 +66,13 @@ public final class ResultsController {
             @Override
             protected void updateItem(ScanSummary item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : label(item));
+                setText(empty || item == null ? null : ScanLabel.of(item));
             }
         });
         scanCombo.setConverter(new StringConverter<>() {
             @Override
             public String toString(ScanSummary s) {
-                return s == null ? "" : label(s);
+                return s == null ? "" : ScanLabel.of(s);
             }
 
             @Override
@@ -85,6 +86,12 @@ public final class ResultsController {
             }
         });
         dateFilter.valueProperty().addListener((obs, old, date) -> filterScans(date));
+        // no selection or a live run: deleting either is invalid
+        deleteButton.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> {
+                    ScanSummary s = scanCombo.getValue();
+                    return s == null || s.status() == ScanSummary.Status.RUNNING;
+                }, scanCombo.valueProperty()));
         searchField.textProperty().addListener((obs, old, query) ->
                 filtered.setPredicate(row -> matches(row, query)));
     }
@@ -153,8 +160,36 @@ public final class ResultsController {
         }
     }
 
-    private static String label(ScanSummary s) {
-        return s.target() + " · " + s.status() + " · " + STAMP.format(s.startedAt());
+    /**
+     * Cascade delete (DB.md), off the FX thread. A RUNNING row is off-limits:
+     * finishScan would re-insert it when the run ends — a deleted scan that
+     * comes back as a zombie. The button is disabled for it anyway.
+     */
+    @FXML
+    private void onDelete() {
+        ScanSummary selected = scanCombo.getValue();
+        if (selected == null || selected.status() == ScanSummary.Status.RUNNING) {
+            return;
+        }
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Delete scan #" + selected.id() + " (" + selected.target() + ")? "
+                        + "Hosts, ports and findings go with it.",
+                ButtonType.OK, ButtonType.CANCEL);
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+        executor.execute(() -> {
+            try {
+                scanDao.deleteScan(selected.id());
+                List<ScanSummary> fresh = scanDao.list();
+                Platform.runLater(() -> {
+                    allScans = fresh;
+                    filterScans(dateFilter.getValue());
+                });
+            } catch (SQLException e) {
+                Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, "Database failure.").showAndWait());
+            }
+        });
     }
 
     private static boolean matches(HostRow row, String query) {

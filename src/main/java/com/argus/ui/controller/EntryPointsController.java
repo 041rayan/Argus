@@ -20,8 +20,6 @@ import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,9 +29,6 @@ import java.util.concurrent.Executors;
  * Reads off the FX thread; the controller only swaps lists (JAVAFX.md).
  */
 public final class EntryPointsController {
-
-    private static final DateTimeFormatter STAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     @FXML
     private ComboBox<ScanSummary> scanCombo;
@@ -60,13 +55,13 @@ public final class EntryPointsController {
             @Override
             protected void updateItem(ScanSummary item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : label(item));
+                setText(empty || item == null ? null : ScanLabel.of(item));
             }
         });
         scanCombo.setConverter(new StringConverter<>() {
             @Override
             public String toString(ScanSummary s) {
-                return s == null ? "" : label(s);
+                return s == null ? "" : ScanLabel.of(s);
             }
 
             @Override
@@ -122,9 +117,5 @@ public final class EntryPointsController {
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR, "Cannot open results view.").showAndWait();
         }
-    }
-
-    private static String label(ScanSummary s) {
-        return s.target() + " · " + s.status() + " · " + STAMP.format(s.startedAt());
     }
 }
