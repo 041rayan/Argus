@@ -1,6 +1,7 @@
 package com.argus.core.pipeline;
 
 import com.argus.core.api.CrtshClient;
+import com.argus.core.api.IpApiClient;
 import com.argus.core.api.KevClient;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
@@ -57,6 +58,14 @@ class ScanRunnerTest {
             exchange.getResponseBody().write(bytes);
             exchange.close();
         });
+        server.createContext("/batch", exchange -> {
+            byte[] bytes = ("[{\"status\":\"success\",\"country\":\"Testland\","
+                    + "\"as\":\"AS64500\",\"org\":\"Test Org\",\"isp\":\"Test ISP\","
+                    + "\"query\":\"127.0.0.1\"}]").getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
         server.start();
         baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
         db = new Database(tmp.resolve("argus-test.db"));
@@ -93,7 +102,8 @@ class ScanRunnerTest {
 
         ScanRunner runner = new ScanRunner(target, 1, events,
                 new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort),
-                new KevMatcher(KevClient.bundled()));
+                new KevMatcher(KevClient.bundled()),
+                new IpApiClient(new ApiCacheDAO(db), baseUrl));
         try (runner) {
             runner.run();
             assertTrue(finishedLatch.await(5, TimeUnit.SECONDS), "ScanFinished never arrived");
@@ -113,6 +123,12 @@ class ScanRunnerTest {
             assertEquals("", scalar(c, "SELECT banner FROM port"),
                     "ephemeral port is not a web/raw port, so the banner stage passes it through");
             assertEquals(0, count(c, "finding"));
+            assertEquals("Testland", scalar(c, "SELECT country FROM host WHERE is_alive = 1"),
+                    "ip-api fill landed before the insert");
+            assertEquals("AS64500", scalar(c, "SELECT asn FROM host WHERE is_alive = 1"));
+            assertEquals("Test Org", scalar(c, "SELECT org FROM host WHERE is_alive = 1"));
+            assertEquals("", scalar(c, "SELECT country FROM host WHERE is_alive = 0"),
+                    "dead hosts have no IP and are not enriched");
         }
     }
 

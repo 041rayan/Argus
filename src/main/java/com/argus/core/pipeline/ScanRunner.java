@@ -1,7 +1,9 @@
 package com.argus.core.pipeline;
 
 import com.argus.core.api.CrtshClient;
+import com.argus.core.api.IpApiClient;
 import com.argus.core.api.KevClient;
+import com.argus.core.api.dto.IpApiResult;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
 import com.argus.core.kev.KevMatcher;
@@ -19,8 +21,11 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * One scan run end to end: crtsh-enum → dns-resolve → port-scan →
@@ -57,6 +63,7 @@ public final class ScanRunner implements AutoCloseable {
     private final List<Finding> findings = new CopyOnWriteArrayList<>();
     private final Pipeline pipeline;
     private final ScanDAO scanDao;
+    private final IpApiClient ipApi;
     private final ExecutorService dbWriter = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "db-writer");
         t.setDaemon(true);
@@ -69,17 +76,19 @@ public final class ScanRunner implements AutoCloseable {
                 DnsResolveModule.SYSTEM_RESOLVER,
                 Database.inUserHome(),
                 PortList.forProfile(target.profile()),
-                new KevMatcher(new KevClient(new ApiCacheDAO(Database.inUserHome())).catalog()));
+                new KevMatcher(new KevClient(new ApiCacheDAO(Database.inUserHome())).catalog()),
+                new IpApiClient(new ApiCacheDAO(Database.inUserHome())));
     }
 
-    /** Test seam: injected client, resolver, database, ports and catalog stay offline. */
+    /** Test seam: injected clients, resolver, database, ports and catalog stay offline. */
     ScanRunner(Target target, long operatorId, EventBus events,
                CrtshClient client, Function<String, Optional<String>> resolver, Database db,
-               List<Integer> ports, KevMatcher matcher) {
+               List<Integer> ports, KevMatcher matcher, IpApiClient ipApi) {
         this.target = target;
         this.operatorId = operatorId;
         this.events = events;
         this.scanDao = new ScanDAO(db);
+        this.ipApi = ipApi;
 
         TargetContext ctx = TargetContext.of(target);
         CrtshEnumModule enumModule = new CrtshEnumModule(client, subdomains, events, token);
@@ -163,6 +172,12 @@ public final class ScanRunner implements AutoCloseable {
             status = ScanSummary.Status.FAILED;
         }
 
+        // ip-api fill after the drain, before the insert: batching and
+        // API.md priority order both need the finished host set
+        if (status == ScanSummary.Status.COMPLETED && !token.isCancelled()) {
+            enrich();
+        }
+
         List<Host> snapshot = List.copyOf(collected);
         List<PortResult> ports = List.copyOf(scanned);
         ScanSummary summary = new ScanSummary(null, operatorId, target.domain(),
@@ -176,6 +191,47 @@ public final class ScanRunner implements AutoCloseable {
         });
         // persist is queued before the event, so close() from the handler can't drop it
         events.publish(new ScanEvent.ScanFinished(status.name(), snapshot.size() + " hosts"));
+    }
+
+    /**
+     * Post-pipeline ip-api fill (API.md ordering): alive hosts get
+     * country/asn/org before the insert. Partial on degradation — a dead
+     * quota costs columns, never the scan.
+     */
+    private void enrich() {
+        Set<String> ips = collected.stream()
+                .filter(Host::alive)
+                .map(Host::ip)
+                .filter(ip -> ip != null && !ip.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (ips.isEmpty()) {
+            return;
+        }
+        try {
+            Map<String, IpApiResult> got = ipApi.lookup(ips);
+            for (int i = 0; i < collected.size(); i++) {
+                Host h = collected.get(i);
+                IpApiResult r = h.alive() ? got.get(h.ip()) : null;
+                if (r != null) {
+                    collected.set(i, new Host(h.id(), h.scanId(), h.subdomain(), h.ip(), h.alive(),
+                            orEmpty(r.country()), orEmpty(r.as()), orgOrIsp(r)));
+                }
+            }
+        } catch (RuntimeException e) {
+            LOG.warn("enrichment failed: {}", e.getMessage());
+        }
+        if (ipApi.degraded()) {
+            events.publish(new ScanEvent.ProviderDegraded(IpApiClient.PROVIDER,
+                    ipApi.degradedStatus()));
+        }
+    }
+
+    private static String orgOrIsp(IpApiResult r) {
+        return r.org() == null || r.org().isBlank() ? orEmpty(r.isp()) : r.org();
+    }
+
+    private static String orEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     /** Cancel button path: token, interrupts, queue drain (THREAD.md). */
