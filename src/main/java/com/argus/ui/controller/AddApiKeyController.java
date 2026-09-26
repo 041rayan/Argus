@@ -1,5 +1,6 @@
 package com.argus.ui.controller;
 
+import com.argus.core.api.VtKeyVerifier;
 import com.argus.db.ApiKeysDAO;
 import com.argus.db.AuditDAO;
 import com.argus.db.Database;
@@ -24,11 +25,14 @@ import java.util.concurrent.Executors;
 /**
  * "Add API Key" dialog: secondary Stage, window-modal, holds its Stage and
  * closes it. Keys are encrypted with the session vault key before storage and
- * never rendered back — status shows configured/not configured only.
+ * never rendered back — status shows configured/not configured only. A saved
+ * VirusTotal key is verified with one live call; the verdict shows in the
+ * message line and an invalid key keeps the dialog open.
  */
 public final class AddApiKeyController {
 
-    private static final String[] PROVIDERS = {"VirusTotal", "Shodan"};
+    private static final String VIRUSTOTAL = "VirusTotal";
+    private static final String[] PROVIDERS = {VIRUSTOTAL, "Shodan"};
 
     @FXML
     private Label statusLabel;
@@ -84,17 +88,48 @@ public final class AddApiKeyController {
             try {
                 dao.upsert(main.operatorId(), provider, key, main.vaultKey());
                 audit.write(main.operatorId(), "KEY_ADDED", provider);
-                Platform.runLater(() -> {
-                    messageLabel.setText("Saved.");
-                    keyField.clear();
-                    close();
-                });
+                if (VIRUSTOTAL.equals(provider)) {
+                    Platform.runLater(() -> messageLabel.setText("Saved. Verifying key…"));
+                    int status = new VtKeyVerifier().check(new String(key, StandardCharsets.UTF_8));
+                    Platform.runLater(() -> onVerified(status));
+                } else {
+                    Platform.runLater(() -> {
+                        messageLabel.setText("Saved.");
+                        keyField.clear();
+                        close();
+                    });
+                }
             } catch (SQLException e) {
                 Platform.runLater(() -> messageLabel.setText("Database failure."));
             } finally {
                 Arrays.fill(key, (byte) 0);
             }
         });
+    }
+
+    /** Verdict after the save — an invalid key keeps the dialog open for a re-add. */
+    private void onVerified(int status) {
+        keyField.clear();
+        switch (status) {
+            case 200 -> {
+                messageLabel.setText("Saved. VirusTotal key verified.");
+                close();
+            }
+            case 429 -> {
+                messageLabel.setText("Saved. Key accepted (rate limited).");
+                close();
+            }
+            case 401, 403 -> messageLabel.setText(
+                    "Saved, but VirusTotal rejected the key (HTTP " + status + "). Re-add a valid one.");
+            case -1 -> {
+                messageLabel.setText("Saved. Could not verify — provider unreachable.");
+                close();
+            }
+            default -> {
+                messageLabel.setText("Saved. Verification status " + status + " — key kept as-is.");
+                close();
+            }
+        }
     }
 
     @FXML
