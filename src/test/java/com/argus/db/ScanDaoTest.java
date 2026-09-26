@@ -46,6 +46,12 @@ class ScanDaoTest {
                 Instant.parse("2026-09-25T00:00:00Z"), Instant.parse("2026-09-25T00:05:00Z"));
     }
 
+    /** The row beginScan writes: RUNNING, finished_at null. */
+    private static ScanSummary running() {
+        return new ScanSummary(null, 1, "example.com", "quick", ScanSummary.Status.RUNNING,
+                Instant.parse("2026-09-25T00:00:00Z"), null);
+    }
+
     private static List<Host> hosts() {
         return List.of(
                 new Host(null, -1, "www.example.com", "93.184.216.34", true, "US", "AS15133", "EdgeCast"),
@@ -53,8 +59,8 @@ class ScanDaoTest {
     }
 
     @Test
-    void insertScanResultsRoundTrip() throws SQLException {
-        long id = dao.insertScanResults(scan(ScanSummary.Status.COMPLETED), hosts(),
+    void finishScanFallbackRoundTripsResults() throws SQLException {
+        long id = dao.finishScan(-1, scan(ScanSummary.Status.COMPLETED), null, hosts(),
                 List.of(
                         new PortResult("www.example.com", 443, "TCP", "https", "1.19.4",
                                 "nginx", "Example", true),
@@ -78,8 +84,8 @@ class ScanDaoTest {
 
     @Test
     void unknownPortHostRollsBackEverything() throws SQLException {
-        assertThrows(SQLException.class, () -> dao.insertScanResults(
-                scan(ScanSummary.Status.COMPLETED), hosts(),
+        assertThrows(SQLException.class, () -> dao.finishScan(-1,
+                scan(ScanSummary.Status.COMPLETED), null, hosts(),
                 List.of(new PortResult("nope.example.com", 80, "TCP", "http", "", "", "", true)),
                 List.of()));
 
@@ -91,7 +97,7 @@ class ScanDaoTest {
 
     @Test
     void deleteScanCascades() throws SQLException {
-        long id = dao.insertScanResults(scan(ScanSummary.Status.FAILED), hosts(),
+        long id = dao.finishScan(-1, scan(ScanSummary.Status.FAILED), null, hosts(),
                 List.of(new PortResult("www.example.com", 443, "TCP", "https", "", "", "", true)),
                 List.of(new Finding(-1, null, "kev", "KEV_MATCH", "HIGH", "{}")));
 
@@ -107,8 +113,8 @@ class ScanDaoTest {
 
     @Test
     void listReturnsNewestFirstWithParsedFields() throws SQLException {
-        long first = dao.insertScanResults(scan(ScanSummary.Status.COMPLETED), List.of(), List.of(), List.of());
-        long second = dao.insertScanResults(scan(ScanSummary.Status.CANCELLED), List.of(), List.of(), List.of());
+        long first = dao.finishScan(-1, scan(ScanSummary.Status.COMPLETED), null, List.of(), List.of(), List.of());
+        long second = dao.finishScan(-1, scan(ScanSummary.Status.CANCELLED), null, List.of(), List.of(), List.of());
 
         List<ScanSummary> scans = dao.list();
         assertEquals(2, scans.size());
@@ -119,6 +125,93 @@ class ScanDaoTest {
         assertEquals("example.com", s.target());
         assertEquals("quick", s.profile());
         assertEquals(Instant.parse("2026-09-25T00:05:00Z"), s.finishedAt());
+    }
+
+    @Test
+    void beginScanWritesVisibleRunningRow() throws SQLException {
+        long id = dao.beginScan(running());
+
+        try (Connection c = open()) {
+            assertEquals(1, count(c, "scan"));
+            assertEquals("RUNNING", scalar(c, "SELECT status FROM scan WHERE id = " + id));
+            assertEquals("null", String.valueOf(scalar(c, "SELECT finished_at FROM scan WHERE id = " + id)));
+        }
+        assertEquals(ScanSummary.Status.RUNNING, dao.list().get(0).status(),
+                "History sees the run while it is still going");
+    }
+
+    @Test
+    void finishScanFinalizesRowAndPersistsResults() throws SQLException {
+        long id = dao.beginScan(running());
+
+        long returned = dao.finishScan(id, scan(ScanSummary.Status.COMPLETED), null,
+                hosts(),
+                List.of(new PortResult("www.example.com", 443, "TCP", "https", "", "", "", true)),
+                List.of(new Finding(-1, null, "kev", "KEV_MATCH", "HIGH", "{}")));
+
+        assertEquals(id, returned, "same row, no duplicate");
+        try (Connection c = open()) {
+            assertEquals(1, count(c, "scan"));
+            assertEquals("COMPLETED", scalar(c, "SELECT status FROM scan"));
+            assertEquals("null", String.valueOf(scalar(c, "SELECT error_message FROM scan")));
+            assertEquals(2, count(c, "host"));
+            assertEquals(1, count(c, "port"));
+            assertEquals(1, count(c, "finding"));
+        }
+    }
+
+    @Test
+    void finishScanRecordsErrorMessage() throws SQLException {
+        long id = dao.beginScan(running());
+        dao.finishScan(id, scan(ScanSummary.Status.FAILED), "run cap hit",
+                List.of(), List.of(), List.of());
+
+        assertEquals("run cap hit", String.valueOf(scalar(open(), "SELECT error_message FROM scan")));
+    }
+
+    @Test
+    void finishScanWithoutBeginInsertsTheRow() throws SQLException {
+        long id = dao.finishScan(-1, scan(ScanSummary.Status.COMPLETED), null,
+                hosts(), List.of(), List.of());
+
+        assertTrue(id > 0, "beginScan failure must not cost the results");
+        try (Connection c = open()) {
+            assertEquals(1, count(c, "scan"));
+            assertEquals(2, count(c, "host"));
+        }
+    }
+
+    @Test
+    void finishScanAfterMidRunDeleteReinsertsTheRow() throws SQLException {
+        long id = dao.beginScan(running());
+        assertTrue(dao.deleteScan(id));
+
+        long returned = dao.finishScan(id, scan(ScanSummary.Status.CANCELLED), null,
+                hosts(), List.of(), List.of());
+
+        assertTrue(returned > 0 && returned != id, "fresh row, new id");
+        try (Connection c = open()) {
+            assertEquals(1, count(c, "scan"));
+            assertEquals(2, count(c, "host"));
+        }
+    }
+
+    @Test
+    void reconcileStaleMarksOnlyRunningRowsFailed() throws SQLException {
+        dao.beginScan(running());
+        dao.beginScan(running());
+        dao.finishScan(-1, scan(ScanSummary.Status.COMPLETED), null, List.of(), List.of(), List.of());
+
+        assertEquals(2, dao.reconcileStale());
+        assertEquals(0, dao.reconcileStale(), "idempotent");
+        try (Connection c = open()) {
+            assertEquals(2, count(c, "scan WHERE status = 'FAILED'"));
+            assertEquals(1, count(c, "scan WHERE status = 'COMPLETED'"));
+            assertEquals("app closed mid-scan",
+                    String.valueOf(scalar(c, "SELECT error_message FROM scan WHERE status = 'FAILED'")));
+            assertEquals(0, count(c, "scan WHERE status = 'FAILED' AND finished_at IS NULL"),
+                    "reconciled rows get a finished_at stamp");
+        }
     }
 
     /** Raw JDBC reader: the read-side DAOs deliberately don't exist yet. */

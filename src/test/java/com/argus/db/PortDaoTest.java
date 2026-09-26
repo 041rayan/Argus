@@ -39,9 +39,9 @@ class PortDaoTest {
 
     @Test
     void listByScanReturnsOpenPortsOrderedByPortNumber() throws SQLException {
-        long scanId = scans.insertScanResults(
+        long scanId = scans.finishScan(-1,
                 new ScanSummary(null, 1, "example.com", "quick", ScanSummary.Status.COMPLETED,
-                        Instant.now(), Instant.now()),
+                        Instant.now(), Instant.now()), null,
                 List.of(new Host(null, -1, "www.example.com", "127.0.0.1", true, "", "", "")),
                 List.of(
                         new PortResult("www.example.com", 8080, "tcp", "http", "", "", "", true),

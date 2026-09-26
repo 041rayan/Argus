@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Scan lifecycle rows: the cross-table write ({@code insertScanResults}) and
+ * Scan lifecycle rows: the cross-table write ({@code finishScan}) and
  * the cascade delete live here — scan is the root, one connection, one
  * transaction (DB.md). Host/port/finding DAOs arrive with their first reader.
  */
@@ -30,40 +30,99 @@ public final class ScanDAO {
     }
 
     /**
-     * Inserts the scan, its hosts, ports and findings in one transaction.
-     * Ports map to host rows by {@code PortResult.host} against subdomain or
-     * IP; findings keep their hostId as given (null while in memory — decision
-     * for the Entry Points view). Returns the generated scan id; any failure
-     * rolls the whole batch back.
+     * Lifecycle write, phase 1: the scan row lands RUNNING the moment the run
+     * starts (finished_at null), so History shows the scan live. Returns the
+     * generated id; the caller passes it to {@link #finishScan}.
      */
-    public long insertScanResults(ScanSummary scan, List<Host> hosts,
-                                  List<PortResult> ports, List<Finding> findings) throws SQLException {
+    public long beginScan(ScanSummary scan) throws SQLException {
+        try (Connection c = db.connect()) {
+            return insertScan(c, scan);
+        }
+    }
+
+    /**
+     * Lifecycle write, phase 2: one transaction — finalize the scan row
+     * (status, finished_at, error_message) and insert hosts, ports and
+     * findings (PortResult.host maps against subdomain or IP; findings keep
+     * their hostId as given). {@code scanId} from {@link #beginScan};
+     * negative means begin failed — the scan row is inserted here instead, so
+     * bookkeeping can never cost the results. A vanished row (deleted
+     * mid-run) is re-inserted for the same reason. Returns the scan id.
+     */
+    public long finishScan(long scanId, ScanSummary scan, String errorMessage,
+                           List<Host> hosts, List<PortResult> ports,
+                           List<Finding> findings) throws SQLException {
         try (Connection c = db.connect()) {
             c.setAutoCommit(false);
             try {
-                long scanId = insertScan(c, scan);
-                Map<String, Long> hostIds = new HashMap<>();
-                for (Host h : hosts) {
-                    long id = insertHost(c, scanId, h);
-                    hostIds.put(h.subdomain(), id);
-                    hostIds.put(h.ip(), id);
+                long id = scanId >= 0 ? updateScan(c, scanId, scan, errorMessage) : -1;
+                if (id < 0) {
+                    id = insertScan(c, scan);
                 }
-                for (PortResult p : ports) {
-                    Long hostId = hostIds.get(p.host());
-                    if (hostId == null) {
-                        throw new SQLException("port result for unknown host: " + p.host());
-                    }
-                    insertPort(c, hostId, p);
-                }
-                for (Finding f : findings) {
-                    insertFinding(c, scanId, f);
-                }
+                insertResults(c, id, hosts, ports, findings);
                 c.commit();
-                return scanId;
+                return id;
             } catch (SQLException e) {
                 c.rollback();
                 throw e;
             }
+        }
+    }
+
+    /**
+     * Startup sweep: a row still RUNNING outlived its session (single
+     * instance — DB.md). Mark it FAILED with the reason so History carries no
+     * phantom runs. Returns how many rows were fixed.
+     */
+    public int reconcileStale() throws SQLException {
+        try (Connection c = db.connect();
+             PreparedStatement p = c.prepareStatement(
+                     "UPDATE scan SET status = 'FAILED', finished_at = ?, "
+                             + "error_message = 'app closed mid-scan' WHERE status = 'RUNNING'")) {
+            p.setString(1, Instant.now().toString());
+            return p.executeUpdate();
+        }
+    }
+
+    /**
+     * Host/port/finding half of a results transaction; the scan row is
+     * handled by the caller. Ports map to host rows by {@code PortResult.host}
+     * against subdomain or IP; findings keep their hostId as given.
+     */
+    private static void insertResults(Connection c, long scanId, List<Host> hosts,
+                                      List<PortResult> ports, List<Finding> findings) throws SQLException {
+        Map<String, Long> hostIds = new HashMap<>();
+        for (Host h : hosts) {
+            long id = insertHost(c, scanId, h);
+            hostIds.put(h.subdomain(), id);
+            hostIds.put(h.ip(), id);
+        }
+        for (PortResult p : ports) {
+            Long hostId = hostIds.get(p.host());
+            if (hostId == null) {
+                throw new SQLException("port result for unknown host: " + p.host());
+            }
+            insertPort(c, hostId, p);
+        }
+        for (Finding f : findings) {
+            insertFinding(c, scanId, f);
+        }
+    }
+
+    /** Finalizes the RUNNING row; @return the id, or -1 when the row is gone. */
+    private static long updateScan(Connection c, long scanId, ScanSummary s,
+                                   String errorMessage) throws SQLException {
+        String sql = "UPDATE scan SET status = ?, finished_at = ?, error_message = ? WHERE id = ?";
+        try (PreparedStatement p = c.prepareStatement(sql)) {
+            p.setString(1, s.status().name());
+            if (s.finishedAt() == null) {
+                p.setObject(2, null);
+            } else {
+                p.setString(2, s.finishedAt().toString());
+            }
+            p.setString(3, errorMessage);
+            p.setLong(4, scanId);
+            return p.executeUpdate() == 1 ? scanId : -1;
         }
     }
 

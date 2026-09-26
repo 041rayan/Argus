@@ -5,6 +5,7 @@ import com.argus.core.auth.LoginService;
 import com.argus.core.concurrency.IdleLockMonitor;
 import com.argus.db.AuditDAO;
 import com.argus.db.Database;
+import com.argus.db.ScanDAO;
 import com.argus.ui.controller.AddApiKeyController;
 import com.argus.ui.controller.DashboardController;
 import com.argus.ui.controller.EntryPointsController;
@@ -22,9 +23,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.Arrays;
 
 /**
@@ -34,6 +38,8 @@ import java.util.Arrays;
  * receive this class through setMain — never by us.
  */
 public final class MainApp extends Application {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MainApp.class);
 
     private Stage primaryStage;
 
@@ -48,8 +54,29 @@ public final class MainApp extends Application {
         primaryStage = stage;
         stage.setTitle("Argus");
         Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+        reconcileStaleScans();
         showLogin();
         stage.show();
+    }
+
+    /**
+     * Startup sweep, off the FX thread: a row still RUNNING outlived its
+     * session (single instance — DB.md), so mark it FAILED with the reason.
+     * Never blocks or fails startup.
+     */
+    private void reconcileStaleScans() {
+        Thread t = new Thread(() -> {
+            try {
+                int fixed = new ScanDAO(Database.inUserHome()).reconcileStale();
+                if (fixed > 0) {
+                    LOG.info("marked {} interrupted scan(s) failed", fixed);
+                }
+            } catch (SQLException e) {
+                LOG.warn("stale scan reconcile failed: {}", e.getMessage());
+            }
+        }, "startup-reconcile");
+        t.setDaemon(true);
+        t.start();
     }
 
     /** Login is the entry scene — every start goes through authentication. */

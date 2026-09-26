@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 /**
  * One scan run end to end: crtsh-enum → dns-resolve → port-scan →
  * banner-grab → kev-analyze → collector, then the
- * results go to the db-writer in one insertScanResults transaction and the
+ * results go to the db-writer in one finishScan transaction and the
  * event bus reports lifecycle (CORE.md, THREAD.md). UI-free — the controller
  * owns the thread that calls {@link #run()} and the FX hop for events.
  */
@@ -151,13 +151,16 @@ public final class ScanRunner implements AutoCloseable {
     public void run() {
         Instant startedAt = Instant.now();
         events.publish(new ScanEvent.ScanStarted(target.domain()));
+        long scanId = beginScan(startedAt);
         ScanSummary.Status status;
+        String scanError = null;
         try {
             pipeline.start();
             boolean drained = pipeline.await(RUN_CAP_SECONDS);
             if (!drained && !token.isCancelled()) {
                 pipeline.cancel(); // run cap hit: stop the stuck stage, keep partials
                 status = ScanSummary.Status.FAILED;
+                scanError = "run cap hit";
             } else if (token.isCancelled()) {
                 status = ScanSummary.Status.CANCELLED;
             } else {
@@ -170,6 +173,7 @@ public final class ScanRunner implements AutoCloseable {
         } catch (RuntimeException e) {
             LOG.warn("scan failed: {}", e.getMessage());
             status = ScanSummary.Status.FAILED;
+            scanError = e.getMessage();
         }
 
         // ip-api fill after the drain, before the insert: batching and
@@ -182,15 +186,31 @@ public final class ScanRunner implements AutoCloseable {
         List<PortResult> ports = List.copyOf(scanned);
         ScanSummary summary = new ScanSummary(null, operatorId, target.domain(),
                 target.profile(), status, startedAt, Instant.now());
+        final String error = scanError;
         dbWriter.execute(() -> {
             try {
-                scanDao.insertScanResults(summary, snapshot, ports, List.copyOf(findings));
+                scanDao.finishScan(scanId, summary, error, snapshot, ports, List.copyOf(findings));
             } catch (SQLException e) {
                 LOG.warn("scan results not persisted: {}", e.getMessage());
             }
         });
         // persist is queued before the event, so close() from the handler can't drop it
         events.publish(new ScanEvent.ScanFinished(status.name(), snapshot.size() + " hosts"));
+    }
+
+    /**
+     * RUNNING row first, so History shows the run while it is going (DB.md).
+     * A bookkeeping failure costs nothing: scanId -1 and finishScan falls
+     * back to inserting the row at the end.
+     */
+    private long beginScan(Instant startedAt) {
+        try {
+            return scanDao.beginScan(new ScanSummary(null, operatorId, target.domain(),
+                    target.profile(), ScanSummary.Status.RUNNING, startedAt, null));
+        } catch (SQLException e) {
+            LOG.warn("scan begin not persisted: {}", e.getMessage());
+            return -1;
+        }
     }
 
     /**

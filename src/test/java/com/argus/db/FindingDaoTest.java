@@ -38,9 +38,9 @@ class FindingDaoTest {
 
     @Test
     void listByScanRoundTripsFindingsWithNullHost() throws SQLException {
-        long scanId = scans.insertScanResults(
+        long scanId = scans.finishScan(-1,
                 new ScanSummary(null, 1, "example.com", "quick", ScanSummary.Status.COMPLETED,
-                        Instant.now(), Instant.now()),
+                        Instant.now(), Instant.now()), null,
                 List.of(),
                 List.of(),
                 List.of(
