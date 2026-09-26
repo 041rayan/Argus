@@ -1,8 +1,14 @@
 package com.argus.ui.controller;
 
 import com.argus.core.export.ExportService;
+import com.argus.core.model.Finding;
+import com.argus.core.model.PortResult;
+import com.argus.core.model.ScanSummary;
 import com.argus.core.model.Target;
 import com.argus.db.Database;
+import com.argus.db.FindingDAO;
+import com.argus.db.PortDAO;
+import com.argus.db.ScanDAO;
 import com.argus.db.TargetDAO;
 import com.argus.ui.MainApp;
 import javafx.application.Platform;
@@ -22,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -113,19 +120,32 @@ public final class ExportController {
 
     private void write(Target target, boolean markdown, File file, Alert progress) {
         try {
+            Database db = Database.inUserHome();
+            ScanSummary scan = new ScanDAO(db).list().stream()
+                    .filter(s -> target.domain().equals(s.target()))
+                    .max(Comparator.comparing(ScanSummary::startedAt))
+                    .orElse(null);
+            List<PortResult> ports = scan == null ? List.of()
+                    : new PortDAO(db).listByScan(scan.id());
+            List<Finding> findings = scan == null ? List.of()
+                    : new FindingDAO(db).listByScan(scan.id());
+            List<ExportService.EntryPoint> points = ExportService.entryPoints(ports, findings);
+            List<ExportService.FindingOut> outs = ExportService.findingOuts(findings);
             String content = markdown
-                    ? service.markdown(target.domain(), null, main.currentUsername(), List.of(), List.of())
-                    : service.json(target.domain(), null, List.of(), List.of());
+                    ? service.markdown(target.domain(), scan == null ? null : scan.finishedAt(),
+                    main.currentUsername(), points, outs)
+                    : service.json(target.domain(), scan == null ? null : scan.finishedAt(),
+                    points, outs);
             Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
             Platform.runLater(() -> {
                 progress.close();
                 new Alert(Alert.AlertType.INFORMATION, "Export complete: " + file.getName()).showAndWait();
                 statusLabel.setText("Exported " + file.getName());
             });
-        } catch (IOException e) {
+        } catch (IOException | SQLException e) {
             Platform.runLater(() -> {
                 progress.close();
-                new Alert(Alert.AlertType.ERROR, "Cannot write file: " + e.getMessage()).showAndWait();
+                new Alert(Alert.AlertType.ERROR, "Export failed: " + e.getMessage()).showAndWait();
             });
         }
     }

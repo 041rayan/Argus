@@ -1,5 +1,6 @@
 package com.argus.core.export;
 
+import com.argus.core.model.PortResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -60,5 +61,57 @@ class ExportServiceTest {
                 service.json("t", null, List.of(), List.of()));
         assertTrue(doc.get("scannedAt").isNull());
         assertEquals(0, doc.get("entryPoints").size());
+    }
+
+    @Test
+    void entryPointsRankByCorePriorityScore() {
+        PortResult apache80 = new PortResult("www.example.com", 80, "tcp", "http",
+                "2.4.49", "", "", true);
+        PortResult ssh = new PortResult("www.example.com", 22, "tcp", "ssh", "", "", "", true);
+        PortResult odd = new PortResult("www.example.com", 9999, "tcp", "", "", "", "", true);
+
+        List<ExportService.EntryPoint> points = ExportService.entryPoints(
+                List.of(apache80, ssh, odd),
+                List.of(finding("www.example.com", 80, "CONFIRMED", true),
+                        finding("www.example.com", 22, "CANDIDATE", false)));
+
+        assertEquals(3, points.size(), "every open port is an entry point");
+        assertEquals(1, points.get(0).rank());
+        assertEquals("www.example.com:80", points.get(0).hostPort());
+        assertEquals(55, points.get(0).score(), "35 confirmed + 10 ransomware + 10 web");
+        assertTrue(points.get(0).kev().contains("CVE-2021-41773 CONFIRMED"));
+        assertEquals(25, points.get(1).score(), "15 candidate + 10 admin service");
+        assertEquals(0, points.get(2).score(), "unknown port, no findings");
+        assertEquals("-", points.get(2).kev());
+        assertEquals("-", points.get(2).service());
+    }
+
+    @Test
+    void scoreIsCappedAtHundred() {
+        List<ExportService.EntryPoint> points = ExportService.entryPoints(
+                List.of(new PortResult("h", 80, "tcp", "http", "", "", "", true)),
+                List.of(finding("h", 80, "CONFIRMED", false),
+                        finding("h", 80, "CONFIRMED", false),
+                        finding("h", 80, "CONFIRMED", false),
+                        finding("h", 80, "CONFIRMED", false)));
+        assertEquals(100, points.get(0).score(), "35*4 + 10 web overflows the cap");
+    }
+
+    @Test
+    void findingOutsSummarizeKevDetails() {
+        List<ExportService.FindingOut> outs =
+                ExportService.findingOuts(List.of(finding("h", 80, "CONFIRMED", false)));
+        assertEquals("KEV_MATCH", outs.get(0).type());
+        assertTrue(outs.get(0).detail().contains("h:80 CVE-2021-41773 (CONFIRMED)"),
+                outs.get(0).detail());
+    }
+
+    private static com.argus.core.model.Finding finding(String host, int port,
+                                                        String confidence, boolean ransomware) {
+        return new com.argus.core.model.Finding(0, null, "kev-analyze", "KEV_MATCH",
+                "CONFIRMED".equals(confidence) ? "HIGH" : "MEDIUM",
+                "{\"host\":\"" + host + "\",\"port\":" + port
+                        + ",\"cve\":\"CVE-2021-41773\",\"confidence\":\"" + confidence
+                        + "\",\"ransomware\":" + ransomware + "}");
     }
 }

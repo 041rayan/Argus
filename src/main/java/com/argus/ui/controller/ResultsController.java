@@ -136,6 +136,15 @@ public final class ResultsController {
     }
 
     @FXML
+    private void onEntryPoints() {
+        try {
+            main.showEntryPoints();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Cannot open entry points view.").showAndWait();
+        }
+    }
+
+    @FXML
     private void onBack() {
         try {
             main.showDashboard();

@@ -1,10 +1,18 @@
 package com.argus.core.export;
 
 import com.argus.core.json.Json;
+import com.argus.core.model.Finding;
+import com.argus.core.model.PortResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Builds the target package (JSON.md): Markdown or JSON. Pure string
@@ -59,5 +67,122 @@ public final class ExportService {
     /** Table cells: pipes would break the Markdown table. */
     private static String clean(String s) {
         return s == null ? "" : s.replace("|", "\\|");
+    }
+
+    /**
+     * Entry points of one scan (CORE.md priority score): every open port with
+     * its KEV verdicts, score = sum of signal weights capped at 100, ranked
+     * descending (ties by host:port). The view and the export share this.
+     */
+    public static List<EntryPoint> entryPoints(List<PortResult> ports, List<Finding> findings) {
+        Map<String, List<Finding>> byPort = new HashMap<>();
+        for (Finding f : findings) {
+            JsonNode d = detail(f);
+            if (d != null && d.has("host") && d.has("port")) {
+                byPort.computeIfAbsent(d.path("host").asText() + ":" + d.path("port").asInt(),
+                        k -> new ArrayList<>()).add(f);
+            }
+        }
+        List<EntryPoint> ranked = new ArrayList<>();
+        for (PortResult p : ports) {
+            List<Finding> own = byPort.getOrDefault(p.host() + ":" + p.port(), List.of());
+            ranked.add(new EntryPoint(0, p.host() + ":" + p.port(), service(p), kev(own), score(p, own)));
+        }
+        ranked.sort(Comparator.comparingInt(EntryPoint::score).reversed()
+                .thenComparing(EntryPoint::hostPort));
+        List<EntryPoint> out = new ArrayList<>();
+        for (int i = 0; i < ranked.size(); i++) {
+            EntryPoint e = ranked.get(i);
+            out.add(new EntryPoint(i + 1, e.hostPort(), e.service(), e.kev(), e.score()));
+        }
+        return out;
+    }
+
+    /** Readable finding lines for markdown and JSON export. */
+    public static List<FindingOut> findingOuts(List<Finding> findings) {
+        return findings.stream()
+                .map(f -> new FindingOut(f.type(), f.severity(), detailText(f)))
+                .toList();
+    }
+
+    /**
+     * Signal weights (CORE.md): each KEV verdict on the port contributes its
+     * weight, ransomware +10, internet-facing web or admin service +10.
+     * VirusTotal (+10) and Shodan (+5) join here when enrich ships.
+     */
+    private static int score(PortResult port, List<Finding> own) {
+        int score = 0;
+        for (Finding f : own) {
+            JsonNode d = detail(f);
+            if (d == null) {
+                continue;
+            }
+            String confidence = d.path("confidence").asText("");
+            if ("CONFIRMED".equals(confidence)) {
+                score += 35;
+            } else if ("CANDIDATE".equals(confidence)) {
+                score += 15;
+            }
+            if (d.path("ransomware").asBoolean(false)) {
+                score += 10;
+            }
+        }
+        if (isWebOrAdmin(port.port())) {
+            score += 10;
+        }
+        return Math.min(100, score);
+    }
+
+    /** Web ports from the CORE.md banner spec; admin remotes an operator logs into. */
+    private static boolean isWebOrAdmin(int port) {
+        return switch (port) {
+            case 80, 443, 8080, 8443, 22, 23, 3389, 5900, 5901 -> true;
+            default -> false;
+        };
+    }
+
+    private static String service(PortResult p) {
+        return p.service() == null || p.service().isBlank() ? "-" : p.service();
+    }
+
+    private static String kev(List<Finding> own) {
+        if (own.isEmpty()) {
+            return "-";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Finding f : own) {
+            JsonNode d = detail(f);
+            if (d == null || !d.has("cve")) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(d.path("cve").asText()).append(' ')
+                    .append(d.path("confidence").asText());
+        }
+        return sb.length() == 0 ? "-" : sb.toString();
+    }
+
+    private static String detailText(Finding f) {
+        JsonNode d = detail(f);
+        if (d == null) {
+            return f.detailJson() == null ? "" : f.detailJson();
+        }
+        if (d.has("cve")) {
+            return d.path("host").asText("") + ":" + d.path("port").asInt(0)
+                    + " " + d.path("cve").asText()
+                    + " (" + d.path("confidence").asText("") + ")";
+        }
+        return f.detailJson() == null ? "" : f.detailJson();
+    }
+
+    /** Lenient: an unparseable detail_json costs a signal, not the export. */
+    private static JsonNode detail(Finding f) {
+        try {
+            return Json.MAPPER.readTree(f.detailJson());
+        } catch (IOException | NullPointerException e) {
+            return null;
+        }
     }
 }
