@@ -20,7 +20,8 @@ import java.util.Map;
  */
 public final class ExportService {
 
-    public record EntryPoint(int rank, String hostPort, String service, String kev, int score) {
+    public record EntryPoint(int rank, String hostPort, String service, String severity,
+                             String kev, int score) {
     }
 
     public record FindingOut(String type, String severity, String detail) {
@@ -37,12 +38,13 @@ public final class ExportService {
                 .append("- Date: ").append(scannedAt == null ? "not yet scanned" : scannedAt).append("\n")
                 .append("- Operator: ").append(clean(operator)).append("\n\n")
                 .append("## Entry points\n\n")
-                .append("| Rank | Host:Port | Service | KEV | Score |\n")
-                .append("|---|---|---|---|---|\n");
+                .append("| Rank | Host:Port | Service | Severity | KEV | Score |\n")
+                .append("|---|---|---|---|---|---|\n");
         for (EntryPoint p : points) {
             md.append("| ").append(p.rank())
                     .append(" | ").append(clean(p.hostPort()))
                     .append(" | ").append(clean(p.service()))
+                    .append(" | ").append(clean(p.severity()))
                     .append(" | ").append(clean(p.kev()))
                     .append(" | ").append(p.score()).append(" |\n");
         }
@@ -86,14 +88,16 @@ public final class ExportService {
         List<EntryPoint> ranked = new ArrayList<>();
         for (PortResult p : ports) {
             List<Finding> own = byPort.getOrDefault(p.host() + ":" + p.port(), List.of());
-            ranked.add(new EntryPoint(0, p.host() + ":" + p.port(), service(p), kev(own), score(p, own)));
+            ranked.add(new EntryPoint(0, p.host() + ":" + p.port(), service(p),
+                    worstSeverity(own), kev(own), score(p, own)));
         }
         ranked.sort(Comparator.comparingInt(EntryPoint::score).reversed()
                 .thenComparing(EntryPoint::hostPort));
         List<EntryPoint> out = new ArrayList<>();
         for (int i = 0; i < ranked.size(); i++) {
             EntryPoint e = ranked.get(i);
-            out.add(new EntryPoint(i + 1, e.hostPort(), e.service(), e.kev(), e.score()));
+            out.add(new EntryPoint(i + 1, e.hostPort(), e.service(), e.severity(),
+                    e.kev(), e.score()));
         }
         return out;
     }
@@ -175,6 +179,28 @@ public final class ExportService {
                     + " (" + d.path("confidence").asText("") + ")";
         }
         return f.detailJson() == null ? "" : f.detailJson();
+    }
+
+    /** Highest severity among the port's findings; "-" when the port has none. */
+    private static String worstSeverity(List<Finding> own) {
+        String worst = "-";
+        for (Finding f : own) {
+            if (severityRank(f.severity()) > severityRank(worst)) {
+                worst = f.severity();
+            }
+        }
+        return worst;
+    }
+
+    private static int severityRank(String severity) {
+        return switch (severity == null ? "" : severity) {
+            case "CRITICAL" -> 4;
+            case "HIGH" -> 3;
+            case "MEDIUM" -> 2;
+            case "LOW" -> 1;
+            case "INFO" -> 0;
+            default -> -1;
+        };
     }
 
     /** Lenient: an unparseable detail_json costs a signal, not the export. */

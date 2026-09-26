@@ -35,27 +35,32 @@
             <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
             <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
             <columns>
-                <TableColumn prefWidth="60.0" text="Rank">
+                <TableColumn prefWidth="56.0" text="Rank">
                     <cellValueFactory>
                         <PropertyValueFactory property="rank"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="300.0" text="Host:Port">
+                <TableColumn prefWidth="250.0" text="Host:Port">
                     <cellValueFactory>
                         <PropertyValueFactory property="hostPort"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="120.0" text="Service">
+                <TableColumn prefWidth="90.0" text="Service">
                     <cellValueFactory>
                         <PropertyValueFactory property="service"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="320.0" text="KEV">
+                <TableColumn prefWidth="90.0" text="Severity">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="severity"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="300.0" text="KEV">
                     <cellValueFactory>
                         <PropertyValueFactory property="kev"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="80.0" text="Score">
+                <TableColumn prefWidth="66.0" text="Score">
                     <cellValueFactory>
                         <PropertyValueFactory property="score"/>
                     </cellValueFactory>

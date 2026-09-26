@@ -31,6 +31,10 @@ public final class EntryPointsRow {
         return entry.score();
     }
 
+    public String getSeverity() {
+        return entry.severity();
+    }
+
     public EntryPoint entry() {
         return entry;
     }

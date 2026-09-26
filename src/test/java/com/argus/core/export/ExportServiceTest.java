@@ -16,8 +16,9 @@ class ExportServiceTest {
     private final ExportService service = new ExportService();
 
     private static final List<ExportService.EntryPoint> POINTS = List.of(
-            new ExportService.EntryPoint(1, "api.example.com:443", "https", "CVE-2021-44228", 75),
-            new ExportService.EntryPoint(2, "mail.example.com:25", "smtp", "", 40));
+            new ExportService.EntryPoint(1, "api.example.com:443", "https", "HIGH",
+                    "CVE-2021-44228", 75),
+            new ExportService.EntryPoint(2, "mail.example.com:25", "smtp", "MEDIUM", "", 40));
 
     private static final List<ExportService.FindingOut> FINDINGS = List.of(
             new ExportService.FindingOut("KEV_MATCH", "CRITICAL", "log4j 2.14.1"),
@@ -30,7 +31,8 @@ class ExportServiceTest {
 
         assertTrue(md.contains("# Target package: example.com"));
         assertTrue(md.contains("- Operator: alice"));
-        assertTrue(md.contains("| 1 | api.example.com:443 | https | CVE-2021-44228 | 75 |"));
+        assertTrue(md.contains("| 1 | api.example.com:443 | https | HIGH | CVE-2021-44228 | 75 |"));
+        assertTrue(md.contains("| Rank | Host:Port | Service | Severity | KEV | Score |"));
         assertTrue(md.contains("- [CRITICAL] KEV_MATCH: log4j 2.14.1"));
     }
 
@@ -52,6 +54,7 @@ class ExportServiceTest {
         assertEquals("2026-09-25T00:00:00Z", doc.get("scannedAt").asText());
         assertEquals(2, doc.get("entryPoints").size());
         assertEquals("CVE-2021-44228", doc.get("entryPoints").get(0).get("kev").asText());
+        assertEquals("HIGH", doc.get("entryPoints").get(0).get("severity").asText());
         assertEquals(2, doc.get("findings").size());
     }
 
@@ -79,9 +82,12 @@ class ExportServiceTest {
         assertEquals(1, points.get(0).rank());
         assertEquals("www.example.com:80", points.get(0).hostPort());
         assertEquals(55, points.get(0).score(), "35 confirmed + 10 ransomware + 10 web");
+        assertEquals("HIGH", points.get(0).severity(), "worst severity of the port's findings");
         assertTrue(points.get(0).kev().contains("CVE-2021-41773 CONFIRMED"));
         assertEquals(25, points.get(1).score(), "15 candidate + 10 admin service");
+        assertEquals("MEDIUM", points.get(1).severity());
         assertEquals(0, points.get(2).score(), "unknown port, no findings");
+        assertEquals("-", points.get(2).severity());
         assertEquals("-", points.get(2).kev());
         assertEquals("-", points.get(2).service());
     }
