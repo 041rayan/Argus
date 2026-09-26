@@ -1,0 +1,9 @@
+[
+  {"cveId": "CVE-2021-41773", "product": "apache_httpd", "introduced": "2.4.49", "fixed": "2.4.50"},
+  {"cveId": "CVE-2021-42013", "product": "apache_httpd", "introduced": "2.4.50", "fixed": "2.4.51"},
+  {"cveId": "CVE-2024-38475", "product": "apache_httpd", "introduced": "2.4.0", "fixed": "2.4.60"},
+  {"cveId": "CVE-2019-0211", "product": "apache_httpd", "introduced": "2.4.17", "fixed": "2.4.39"},
+  {"cveId": "CVE-2020-1938", "product": "tomcat", "introduced": "7.0.0", "fixed": "7.0.100"},
+  {"cveId": "CVE-2020-1938", "product": "tomcat", "introduced": "8.5.0", "fixed": "8.5.50"},
+  {"cveId": "CVE-2020-1938", "product": "tomcat", "introduced": "9.0.0", "fixed": "9.0.31"}
+]

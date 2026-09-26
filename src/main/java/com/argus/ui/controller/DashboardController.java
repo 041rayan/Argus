@@ -58,7 +58,9 @@ public final class DashboardController {
     });
 
     private MainApp main;
-    private ScanRunner runner;
+    private volatile ScanRunner runner;
+    /** True while the coordinator thread is still constructing the runner. */
+    private volatile boolean starting;
     private int hostCount;
     private int portCount;
 
@@ -127,6 +129,9 @@ public final class DashboardController {
             scanStatusLabel.setText("Cancelling…");
             return;
         }
+        if (starting) {
+            return; // runner not constructed yet — a second click has nothing to cancel
+        }
         Target target = scanTargetCombo.getValue();
         if (target == null) {
             new Alert(Alert.AlertType.WARNING, "Pick a target first.").showAndWait();
@@ -136,11 +141,22 @@ public final class DashboardController {
         portCount = 0;
         EventBus events = new EventBus();
         events.subscribe(this::onScanEvent);
-        ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events);
-        runner = newRunner;
+        starting = true;
         scanButton.setText("Cancel");
         scanStatusLabel.setText("Scanning " + target.domain() + "…");
-        coordinator.execute(newRunner::run);
+        coordinator.execute(() -> {
+            try {
+                // construction may refresh the KEV catalog (network) — FX thread stays free
+                ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events);
+                runner = newRunner;
+                newRunner.run();
+            } catch (RuntimeException e) {
+                events.publish(new ScanEvent.ScanFinished("FAILED",
+                        e.getMessage() == null ? "scan start failed" : e.getMessage()));
+            } finally {
+                starting = false;
+            }
+        });
     }
 
     /** Event-bus thread — hop to FX (JAVAFX.md). */

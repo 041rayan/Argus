@@ -1,8 +1,11 @@
 package com.argus.core.pipeline;
 
 import com.argus.core.api.CrtshClient;
+import com.argus.core.api.KevClient;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
+import com.argus.core.kev.KevMatcher;
+import com.argus.core.model.Finding;
 import com.argus.core.model.Host;
 import com.argus.core.model.PortResult;
 import com.argus.core.model.ScanSummary;
@@ -28,7 +31,7 @@ import java.util.function.Function;
 
 /**
  * One scan run end to end: crtsh-enum → dns-resolve → port-scan →
- * banner-grab → collector, then the
+ * banner-grab → kev-analyze → collector, then the
  * results go to the db-writer in one insertScanResults transaction and the
  * event bus reports lifecycle (CORE.md, THREAD.md). UI-free — the controller
  * owns the thread that calls {@link #run()} and the FX hop for events.
@@ -48,8 +51,10 @@ public final class ScanRunner implements AutoCloseable {
     private final BlockingQueue<Object> hosts = new LinkedBlockingQueue<>();
     private final BlockingQueue<Object> openPorts = new LinkedBlockingQueue<>();
     private final BlockingQueue<Object> results = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Object> analyzed = new LinkedBlockingQueue<>();
     private final List<Host> collected = new CopyOnWriteArrayList<>();
     private final List<PortResult> scanned = new CopyOnWriteArrayList<>();
+    private final List<Finding> findings = new CopyOnWriteArrayList<>();
     private final Pipeline pipeline;
     private final ScanDAO scanDao;
     private final ExecutorService dbWriter = Executors.newSingleThreadExecutor(r -> {
@@ -63,13 +68,14 @@ public final class ScanRunner implements AutoCloseable {
                 new CrtshClient(new ApiCacheDAO(Database.inUserHome())),
                 DnsResolveModule.SYSTEM_RESOLVER,
                 Database.inUserHome(),
-                PortList.forProfile(target.profile()));
+                PortList.forProfile(target.profile()),
+                new KevMatcher(new KevClient(new ApiCacheDAO(Database.inUserHome())).catalog()));
     }
 
-    /** Test seam: injected client, resolver, database and port list keep tests offline. */
+    /** Test seam: injected client, resolver, database, ports and catalog stay offline. */
     ScanRunner(Target target, long operatorId, EventBus events,
                CrtshClient client, Function<String, Optional<String>> resolver, Database db,
-               List<Integer> ports) {
+               List<Integer> ports, KevMatcher matcher) {
         this.target = target;
         this.operatorId = operatorId;
         this.events = events;
@@ -82,7 +88,8 @@ public final class ScanRunner implements AutoCloseable {
         PortScanModule portScan = new PortScanModule(hosts, openPorts, events, token, ports);
         BannerGrabModule banner = new BannerGrabModule(openPorts, results, token,
                 BANNER_WORKERS, resolver);
-        Pump collect = new Pump(results, null, token, 1);
+        KevAnalyzeModule kev = new KevAnalyzeModule(results, analyzed, events, token, matcher);
+        Pump collect = new Pump(analyzed, null, token, 1);
 
         Stage enumStage = Stage.runner(Stage.executor("stage-enum", 1), 1,
                 () -> {
@@ -109,18 +116,26 @@ public final class ScanRunner implements AutoCloseable {
                         banner.execute(ctx);
                     }
                 }, openPorts, results);
+        Stage kevStage = Stage.runner(Stage.executor("stage-kev", 1), 1,
+                () -> {
+                    if (kev.supports(ctx)) {
+                        kev.execute(ctx);
+                    }
+                }, results, analyzed);
         Stage collectStage = Stage.runner(Stage.executor("stage-collect", 1), 1,
                 () -> collect.run(item -> {
                     Object payload = Pump.payload(item);
                     if (payload instanceof PortResult p) {
                         scanned.add(p);
+                    } else if (payload instanceof Finding f) {
+                        findings.add(f);
                     } else {
                         collected.add((Host) payload);
                     }
-                }), results);
+                }), analyzed);
 
         this.pipeline = new Pipeline(token, enumStage, dnsStage, portStage, bannerStage,
-                collectStage);
+                kevStage, collectStage);
     }
 
     /** Blocking: run it on a worker thread, not the FX thread. */
@@ -154,7 +169,7 @@ public final class ScanRunner implements AutoCloseable {
                 target.profile(), status, startedAt, Instant.now());
         dbWriter.execute(() -> {
             try {
-                scanDao.insertScanResults(summary, snapshot, ports, List.of());
+                scanDao.insertScanResults(summary, snapshot, ports, List.copyOf(findings));
             } catch (SQLException e) {
                 LOG.warn("scan results not persisted: {}", e.getMessage());
             }

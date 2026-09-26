@@ -1,0 +1,4 @@
+{
+  "apache_httpd": {"vendorProject": "Apache", "product": "HTTP Server"},
+  "tomcat": {"vendorProject": "Apache", "product": "Tomcat"}
+}

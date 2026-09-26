@@ -1,8 +1,10 @@
 package com.argus.core.pipeline;
 
 import com.argus.core.api.CrtshClient;
+import com.argus.core.api.KevClient;
 import com.argus.core.event.EventBus;
 import com.argus.core.event.ScanEvent;
+import com.argus.core.kev.KevMatcher;
 import com.argus.core.model.Target;
 import com.argus.db.ApiCacheDAO;
 import com.argus.db.Database;
@@ -90,7 +92,8 @@ class ScanRunnerTest {
         int httpPort = server.getAddress().getPort();
 
         ScanRunner runner = new ScanRunner(target, 1, events,
-                new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort));
+                new CrtshClient(new ApiCacheDAO(db), baseUrl), resolver, db, List.of(httpPort),
+                new KevMatcher(KevClient.bundled()));
         try (runner) {
             runner.run();
             assertTrue(finishedLatch.await(5, TimeUnit.SECONDS), "ScanFinished never arrived");
