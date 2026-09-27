@@ -1,61 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
-<AnchorPane fx:id="root"
-            prefHeight="640.0" prefWidth="900.0"
-            styleClass="root-pane"
+<?import javafx.scene.layout.VBox?>
+<ScrollPane fitToWidth="true" styleClass="root-pane"
             xmlns="http://javafx.com/javafx/21.0.8"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.argus.ui.controller.DashboardController">
-    <children>
-        <Label fx:id="titleLabel" styleClass="title-label" text="Argus">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
-        </Label>
-        <Label fx:id="statusLabel" styleClass="status-label" text="Loading…">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
-        </Label>
-        <HBox alignment="CENTER_LEFT" spacing="8.0">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>104.0</AnchorPane.topAnchor>
+    <content>
+        <VBox spacing="16.0" style="-fx-padding: 24;">
             <children>
-                <ComboBox fx:id="scanTargetCombo" prefHeight="32.0" prefWidth="300.0"
-                          promptText="Target"/>
-                <Button fx:id="scanButton" mnemonicParsing="false" onAction="#onScan"
-                        prefHeight="32.0" styleClass="accent" text="Scan"/>
+                <Label styleClass="title-label" text="Dashboard"/>
+                <VBox spacing="8.0">
+                    <children>
+                        <Label styleClass="text-muted" text="SCAN"/>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <ComboBox fx:id="scanTargetCombo" prefHeight="32.0"
+                                          prefWidth="300.0" promptText="Target"/>
+                                <Button fx:id="scanButton" mnemonicParsing="false"
+                                        onAction="#onScan" prefHeight="32.0"
+                                        styleClass="accent" text="Scan"/>
+                            </children>
+                        </HBox>
+                        <ProgressBar fx:id="scanProgress" maxWidth="Infinity"
+                                     prefHeight="12.0" progress="0"/>
+                        <Label fx:id="scanStatusLabel" styleClass="status-label" text=""/>
+                    </children>
+                </VBox>
+                <HBox spacing="16.0">
+                    <children>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="text-muted" text="SCANS"/>
+                                <Label fx:id="statScans" styleClass="title-2" text="–"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="text-muted" text="ALIVE HOSTS"/>
+                                <Label fx:id="statHosts" styleClass="title-2" text="–"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="text-muted" text="OPEN PORTS"/>
+                                <Label fx:id="statPorts" styleClass="title-2" text="–"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="text-muted" text="KEV FINDINGS"/>
+                                <Label fx:id="statKev" styleClass="title-2" text="–"/>
+                            </children>
+                        </VBox>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="text-muted" text="VT-FLAGGED"/>
+                                <Label fx:id="statVt" styleClass="title-2" text="–"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+                <HBox spacing="16.0">
+                    <children>
+                        <BarChart fx:id="severityChart" animated="false" legendVisible="false"
+                                  prefHeight="260.0" prefWidth="420.0" title="Findings by severity">
+                            <xAxis>
+                                <CategoryAxis label="Severity"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis label="Count"/>
+                            </yAxis>
+                        </BarChart>
+                        <BarChart fx:id="portsChart" animated="false" legendVisible="false"
+                                  prefHeight="260.0" prefWidth="420.0" title="Top ports">
+                            <xAxis>
+                                <CategoryAxis label="Port"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis label="Hosts"/>
+                            </yAxis>
+                        </BarChart>
+                    </children>
+                </HBox>
             </children>
-        </HBox>
-        <Label fx:id="scanStatusLabel" styleClass="status-label" text="">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>150.0</AnchorPane.topAnchor>
-        </Label>
-        <Button mnemonicParsing="false" text="Targets" onAction="#onShowTargets">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>196.0</AnchorPane.topAnchor>
-        </Button>
-        <Button mnemonicParsing="false" text="API Keys" onAction="#onApiKeys">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>236.0</AnchorPane.topAnchor>
-        </Button>
-        <Button mnemonicParsing="false" text="Export" onAction="#onExport">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>276.0</AnchorPane.topAnchor>
-        </Button>
-        <Button mnemonicParsing="false" text="Results" onAction="#onShowResults">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>316.0</AnchorPane.topAnchor>
-        </Button>
-        <Label fx:id="apiKeysLabel" styleClass="status-label" text="">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>364.0</AnchorPane.topAnchor>
-        </Label>
-        <Button fx:id="logoutButton" mnemonicParsing="false" onAction="#onLogout" text="Log out">
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
-        </Button>
-    </children>
-</AnchorPane>
+        </VBox>
+    </content>
+</ScrollPane>

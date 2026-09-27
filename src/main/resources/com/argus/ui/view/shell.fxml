@@ -26,6 +26,8 @@
                         onAction="#onNavEntryPoints" styleClass="flat" text="Entry Points"/>
                 <Button fx:id="navExport" maxWidth="Infinity" mnemonicParsing="false"
                         onAction="#onNavExport" styleClass="flat" text="Export"/>
+                <Button fx:id="navApiKeys" maxWidth="Infinity" mnemonicParsing="false"
+                        onAction="#onNavApiKeys" styleClass="flat" text="API Keys"/>
                 <Separator/>
                 <Label fx:id="keyStatusLabel" styleClass="status-label" text=""/>
                 <Button fx:id="lockButton" maxWidth="Infinity" mnemonicParsing="false"

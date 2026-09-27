@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Targets form and list. DAO work runs off the FX thread; UI updates via Platform.runLater. */
-public final class TargetsController {
+public final class TargetsController implements ShellContent {
 
     @FXML
     private TextField labelField;
@@ -45,7 +45,8 @@ public final class TargetsController {
 
     private final ObservableList<TargetRow> rows = FXCollections.observableArrayList();
     private final FilteredList<TargetRow> filtered = new FilteredList<>(rows);
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+    /* Package-visible for the shell swap-out test (test-seam precedent). */
+    final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "target-dao");
         t.setDaemon(true);
         return t;
@@ -158,13 +159,9 @@ public final class TargetsController {
         });
     }
 
-    @FXML
-    private void onBack() {
-        try {
-            main.showDashboard();
-        } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Cannot open dashboard view.").showAndWait();
-        }
+    @Override
+    public void onHidden() {
+        executor.shutdownNow();
     }
 
     private void reload() {

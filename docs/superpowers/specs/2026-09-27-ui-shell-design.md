@@ -66,12 +66,10 @@ on close. No shared mutable UI state between windows.
 - Styling stays AtlantaFX classes + `application.css`; no `setStyle`.
 
 ## Migration cycles (≤200 lines each, `mvn verify` + visual sign-off)
-1. Shell + dashboard-as-first-pane.
-2. Results + Entry Points panes (+ KEV tooltip, detail strip).
-3. Targets + Export + dialogs.
-4. Scan monitor window.
-5. Detach + tear-off.
-6. Charts polish + geometry memory.
+1. Dashboard from zero (command card, stat cards, charts; old nav buttons deleted).
+2. Targets + Export as panes (sidebar persists).
+3. Results + Entry Points as panes (+ KEV tooltip, detail strip).
+4. Delete every legacy `showX` scene-switch and Back button (no eject paths remain).
 
 ## Testing
 - `FxmlLoadTest` extended per new FXML; full `mvn verify` per cycle.

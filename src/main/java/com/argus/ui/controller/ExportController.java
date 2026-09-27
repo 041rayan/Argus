@@ -38,7 +38,7 @@ import java.util.concurrent.Executors;
  * runs off the FX thread behind an application-modal progress dialog
  * (JAVAFX.md); completion is an INFORMATION alert.
  */
-public final class ExportController {
+public final class ExportController implements ShellContent {
 
     private static final String MARKDOWN = "Markdown";
     private static final String JSON = "JSON";
@@ -51,7 +51,8 @@ public final class ExportController {
     private Label statusLabel;
 
     private final ExportService service = new ExportService();
-    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+    /* Package-visible for the shell swap-out test (test-seam precedent). */
+    final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "export-worker");
         t.setDaemon(true);
         return t;
@@ -173,16 +174,12 @@ public final class ExportController {
         return progress;
     }
 
-    private Window window() {
-        return targetCombo.getScene().getWindow();
+    @Override
+    public void onHidden() {
+        worker.shutdownNow();
     }
 
-    @FXML
-    private void onBack() {
-        try {
-            main.showDashboard();
-        } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Cannot open dashboard view.").showAndWait();
-        }
+    private Window window() {
+        return targetCombo.getScene().getWindow();
     }
 }

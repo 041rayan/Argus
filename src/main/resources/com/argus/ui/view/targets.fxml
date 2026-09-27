@@ -71,10 +71,6 @@
             </columns>
         </TableView>
 
-        <Button mnemonicParsing="false" onAction="#onBack" text="Back">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
-        </Button>
         <Button mnemonicParsing="false" onAction="#onDelete" text="Delete">
             <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
             <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>

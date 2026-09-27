@@ -27,6 +27,8 @@ public final class ShellController {
     @FXML
     private Button navExport;
     @FXML
+    private Button navApiKeys;
+    @FXML
     private Label keyStatusLabel;
     @FXML
     private Label statusBarLabel;
@@ -46,7 +48,32 @@ public final class ShellController {
             return;
         }
         select(navDashboard);
-        swapDashboard();
+        setPane("dashboard", loader -> {
+            DashboardController controller = loader.getController();
+            controller.setMain(main);
+        }, "dashboard");
+    }
+
+    public void showTargets() {
+        if (!leavePane()) {
+            return;
+        }
+        select(navTargets);
+        setPane("targets", loader -> {
+            TargetsController controller = loader.getController();
+            controller.setMain(main);
+        }, "targets");
+    }
+
+    public void showExport() {
+        if (!leavePane()) {
+            return;
+        }
+        select(navExport);
+        setPane("export", loader -> {
+            ExportController controller = loader.getController();
+            controller.setMain(main);
+        }, "export");
     }
 
     /**
@@ -69,18 +96,21 @@ public final class ShellController {
         return true;
     }
 
-    private void swapDashboard() {
+    private interface PaneWire {
+        void wire(FXMLLoader loader);
+    }
+
+    private void setPane(String view, PaneWire wire, String label) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/argus/ui/view/dashboard.fxml"));
+                    getClass().getResource("/com/argus/ui/view/" + view + ".fxml"));
             Parent pane = loader.load();
-            DashboardController controller = loader.getController();
-            controller.setMain(main);
-            currentController = controller;
+            wire.wire(loader);
+            currentController = loader.getController();
             contentArea.getChildren().setAll(pane);
             statusBarLabel.setText("Ready");
         } catch (IOException e) {
-            statusBarLabel.setText("Cannot open dashboard.");
+            statusBarLabel.setText("Cannot open " + label + ".");
         }
     }
 
@@ -90,10 +120,8 @@ public final class ShellController {
     }
 
     @FXML
-    private void onNavTargets() throws IOException {
-        if (leavePane()) {
-            main.showTargets();
-        }
+    private void onNavTargets() {
+        showTargets();
     }
 
     @FXML
@@ -111,9 +139,16 @@ public final class ShellController {
     }
 
     @FXML
-    private void onNavExport() throws IOException {
-        if (leavePane()) {
-            main.showExport();
+    private void onNavExport() {
+        showExport();
+    }
+
+    @FXML
+    private void onNavApiKeys() {
+        try {
+            main.showAddApiKey();
+        } catch (IOException e) {
+            statusBarLabel.setText("Cannot open API keys dialog.");
         }
     }
 
@@ -133,7 +168,7 @@ public final class ShellController {
 
     private void select(Button active) {
         for (Button b : List.of(navDashboard, navTargets, navResults,
-                navEntryPoints, navExport)) {
+                navEntryPoints, navExport, navApiKeys)) {
             b.getStyleClass().remove("accent");
             if (!b.getStyleClass().contains("flat")) {
                 b.getStyleClass().add("flat");
