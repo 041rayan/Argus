@@ -20,7 +20,7 @@
                 <Label styleClass="status-label" text="Session idle — re-enter your password."/>
                 <PasswordField fx:id="passwordField" prefHeight="32.0" promptText="Password"/>
                 <Button fx:id="unlockButton" mnemonicParsing="false" onAction="#onUnlock"
-                        prefHeight="32.0" text="Unlock"/>
+                        prefHeight="32.0" styleClass="accent" text="Unlock"/>
                 <Label fx:id="statusLabel" styleClass="status-label" text=""/>
             </children>
         </VBox>

@@ -24,7 +24,7 @@
                 <ComboBox fx:id="targetCombo" prefHeight="32.0" prefWidth="320.0"
                           promptText="Target" HBox.hgrow="ALWAYS"/>
                 <ComboBox fx:id="formatCombo" prefHeight="32.0" prefWidth="130.0"/>
-                <Button mnemonicParsing="false" onAction="#onExport" prefHeight="32.0" text="Export"/>
+                <Button mnemonicParsing="false" onAction="#onExport" prefHeight="32.0" styleClass="accent" text="Export"/>
             </children>
         </HBox>
 

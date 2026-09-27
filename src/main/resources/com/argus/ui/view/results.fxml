@@ -38,7 +38,7 @@
             <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
         </TextField>
 
-        <TableView fx:id="hostsTable">
+        <TableView fx:id="hostsTable" styleClass="striped">
             <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
             <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
             <AnchorPane.topAnchor>158.0</AnchorPane.topAnchor>
@@ -77,7 +77,7 @@
             </columns>
         </TableView>
 
-        <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#onDelete" text="Delete scan">
+        <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#onDelete" styleClass="danger" text="Delete scan">
             <AnchorPane.leftAnchor>236.0</AnchorPane.leftAnchor>
             <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
         </Button>

@@ -22,8 +22,8 @@
                 <ComboBox fx:id="providerCombo" prefHeight="32.0"/>
                 <PasswordField fx:id="keyField" prefHeight="32.0" promptText="API key (never displayed after save)"/>
                 <Label fx:id="messageLabel" styleClass="status-label" text=""/>
-                <Button fx:id="saveButton" mnemonicParsing="false" onAction="#onSave" prefHeight="32.0" text="Save"/>
-                <Button fx:id="removeButton" mnemonicParsing="false" onAction="#onRemove" prefHeight="32.0" text="Remove"/>
+                <Button fx:id="saveButton" mnemonicParsing="false" onAction="#onSave" prefHeight="32.0" styleClass="accent" text="Save"/>
+                <Button fx:id="removeButton" mnemonicParsing="false" onAction="#onRemove" prefHeight="32.0" styleClass="danger" text="Remove"/>
                 <Button mnemonicParsing="false" onAction="#onClose" prefHeight="32.0" text="Close"/>
             </children>
         </VBox>

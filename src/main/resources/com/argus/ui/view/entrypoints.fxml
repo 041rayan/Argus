@@ -29,7 +29,7 @@
             </children>
         </HBox>
 
-        <TableView fx:id="entryTable">
+        <TableView fx:id="entryTable" styleClass="striped">
             <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
             <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
             <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
