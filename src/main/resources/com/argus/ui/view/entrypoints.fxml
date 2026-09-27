@@ -55,9 +55,14 @@
                         <PropertyValueFactory property="severity"/>
                     </cellValueFactory>
                 </TableColumn>
-                <TableColumn prefWidth="300.0" text="KEV">
+                <TableColumn prefWidth="220.0" text="KEV">
                     <cellValueFactory>
                         <PropertyValueFactory property="kev"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn prefWidth="80.0" text="VT">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="vt"/>
                     </cellValueFactory>
                 </TableColumn>
                 <TableColumn prefWidth="66.0" text="Score">

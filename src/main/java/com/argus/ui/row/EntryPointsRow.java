@@ -27,6 +27,10 @@ public final class EntryPointsRow {
         return entry.kev();
     }
 
+    public String getVt() {
+        return entry.vt();
+    }
+
     public int getScore() {
         return entry.score();
     }

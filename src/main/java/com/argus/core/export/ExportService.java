@@ -21,7 +21,7 @@ import java.util.Map;
 public final class ExportService {
 
     public record EntryPoint(int rank, String hostPort, String service, String severity,
-                             String kev, int score) {
+                             String kev, String vt, int score) {
     }
 
     public record FindingOut(String type, String severity, String detail) {
@@ -38,14 +38,15 @@ public final class ExportService {
                 .append("- Date: ").append(scannedAt == null ? "not yet scanned" : scannedAt).append("\n")
                 .append("- Operator: ").append(clean(operator)).append("\n\n")
                 .append("## Entry points\n\n")
-                .append("| Rank | Host:Port | Service | Severity | KEV | Score |\n")
-                .append("|---|---|---|---|---|---|\n");
+                .append("| Rank | Host:Port | Service | Severity | KEV | VT | Score |\n")
+                .append("|---|---|---|---|---|---|---|\n");
         for (EntryPoint p : points) {
             md.append("| ").append(p.rank())
                     .append(" | ").append(clean(p.hostPort()))
                     .append(" | ").append(clean(p.service()))
                     .append(" | ").append(clean(p.severity()))
                     .append(" | ").append(clean(p.kev()))
+                    .append(" | ").append(clean(p.vt()))
                     .append(" | ").append(p.score()).append(" |\n");
         }
         md.append("\n## Findings\n\n");
@@ -73,8 +74,9 @@ public final class ExportService {
 
     /**
      * Entry points of one scan (CORE.md priority score): every open port with
-     * its KEV verdicts, score = sum of signal weights capped at 100, ranked
-     * descending (ties by host:port). The view and the export share this.
+     * its KEV verdicts and VT engine counts, score = sum of signal weights
+     * capped at 100, ranked descending (ties by host:port). The view and the
+     * export share this.
      */
     public static List<EntryPoint> entryPoints(List<PortResult> ports, List<Finding> findings) {
         Map<String, List<Finding>> byPort = new HashMap<>();
@@ -89,7 +91,7 @@ public final class ExportService {
         for (PortResult p : ports) {
             List<Finding> own = byPort.getOrDefault(p.host() + ":" + p.port(), List.of());
             ranked.add(new EntryPoint(0, p.host() + ":" + p.port(), service(p),
-                    worstSeverity(own), kev(own), score(p, own)));
+                    worstSeverity(own), kev(own), vt(own), score(p, own)));
         }
         ranked.sort(Comparator.comparingInt(EntryPoint::score).reversed()
                 .thenComparing(EntryPoint::hostPort));
@@ -97,7 +99,7 @@ public final class ExportService {
         for (int i = 0; i < ranked.size(); i++) {
             EntryPoint e = ranked.get(i);
             out.add(new EntryPoint(i + 1, e.hostPort(), e.service(), e.severity(),
-                    e.kev(), e.score()));
+                    e.kev(), e.vt(), e.score()));
         }
         return out;
     }
@@ -182,6 +184,26 @@ public final class ExportService {
                     + " (" + d.path("confidence").asText("") + ")";
         }
         return f.detailJson() == null ? "" : f.detailJson();
+    }
+
+    /**
+     * VT engine counts for the port's VT_FLAGGED findings, rendered
+     * malicious/suspicious ("12/4"); "-" when no engine flagged it.
+     */
+    private static String vt(List<Finding> own) {
+        StringBuilder sb = new StringBuilder();
+        for (Finding f : own) {
+            JsonNode d = detail(f);
+            if (d == null || !"VT_FLAGGED".equals(f.type())) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(d.path("malicious").asInt(0))
+                    .append('/').append(d.path("suspicious").asInt(0));
+        }
+        return sb.length() == 0 ? "-" : sb.toString();
     }
 
     /** Highest severity among the port's findings; "-" when the port has none. */

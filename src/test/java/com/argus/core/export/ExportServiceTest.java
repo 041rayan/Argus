@@ -18,8 +18,8 @@ class ExportServiceTest {
 
     private static final List<ExportService.EntryPoint> POINTS = List.of(
             new ExportService.EntryPoint(1, "api.example.com:443", "https", "HIGH",
-                    "CVE-2021-44228", 75),
-            new ExportService.EntryPoint(2, "mail.example.com:25", "smtp", "MEDIUM", "", 40));
+                    "CVE-2021-44228", "12/4", 75),
+            new ExportService.EntryPoint(2, "mail.example.com:25", "smtp", "MEDIUM", "", "-", 40));
 
     private static final List<ExportService.FindingOut> FINDINGS = List.of(
             new ExportService.FindingOut("KEV_MATCH", "CRITICAL", "log4j 2.14.1"),
@@ -32,8 +32,8 @@ class ExportServiceTest {
 
         assertTrue(md.contains("# Target package: example.com"));
         assertTrue(md.contains("- Operator: alice"));
-        assertTrue(md.contains("| 1 | api.example.com:443 | https | HIGH | CVE-2021-44228 | 75 |"));
-        assertTrue(md.contains("| Rank | Host:Port | Service | Severity | KEV | Score |"));
+        assertTrue(md.contains("| 1 | api.example.com:443 | https | HIGH | CVE-2021-44228 | 12/4 | 75 |"));
+        assertTrue(md.contains("| Rank | Host:Port | Service | Severity | KEV | VT | Score |"));
         assertTrue(md.contains("- [CRITICAL] KEV_MATCH: log4j 2.14.1"));
     }
 
@@ -109,6 +109,22 @@ class ExportServiceTest {
         assertEquals(0,
                 ExportService.entryPoints(List.of(odd), List.of(weak)).get(0).score(),
                 "2 engines: verdict kept, weight not granted");
+    }
+
+    @Test
+    void vtColumnShowsEngineCounts() {
+        PortResult odd = new PortResult("h.example.com", 9999, "tcp", "", "", "", "", true);
+        Finding flagged = new Finding(0, null, "virustotal", "VT_FLAGGED", "MEDIUM",
+                "{\"host\":\"h.example.com\",\"port\":9999,\"ip\":\"203.0.113.7\","
+                        + "\"malicious\":12,\"suspicious\":4}");
+
+        List<ExportService.EntryPoint> points =
+                ExportService.entryPoints(List.of(odd), List.of(flagged));
+        assertEquals("12/4", points.get(0).vt(), "malicious/suspicious engine counts");
+
+        List<ExportService.EntryPoint> clean =
+                ExportService.entryPoints(List.of(odd), List.of());
+        assertEquals("-", clean.get(0).vt(), "no verdict, no marker");
     }
 
     @Test
