@@ -2,35 +2,33 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.HBox?>
-<AnchorPane fx:id="root"
-            prefHeight="640.0" prefWidth="900.0"
-            styleClass="root-pane"
-            xmlns="http://javafx.com/javafx/21.0.8"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.argus.ui.controller.ExportController">
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="16.0" styleClass="ag-pane"
+      xmlns="http://javafx.com/javafx/21.0.8"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.argus.ui.controller.ExportController">
     <children>
-        <Label styleClass="title-label" text="Export">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
-        </Label>
-
-        <HBox alignment="CENTER_LEFT" spacing="8.0">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+        <Label styleClass="ag-view-title" text="Export"/>
+        <VBox alignment="TOP_LEFT" maxWidth="560.0" spacing="12.0" styleClass="ag-card">
             <children>
-                <ComboBox fx:id="targetCombo" prefHeight="32.0" prefWidth="320.0"
-                          promptText="Target" HBox.hgrow="ALWAYS"/>
-                <ComboBox fx:id="formatCombo" prefHeight="32.0" prefWidth="130.0"/>
-                <Button mnemonicParsing="false" onAction="#onExport" prefHeight="32.0" styleClass="accent" text="Export"/>
+                <Label styleClass="ag-field-label" text="TARGET"/>
+                <ComboBox fx:id="targetCombo" maxWidth="Infinity" prefHeight="38.0"
+                          promptText="Target" styleClass="ag-field"/>
+                <Label styleClass="ag-field-label" text="FORMAT"/>
+                <ComboBox fx:id="formatCombo" maxWidth="Infinity" prefHeight="38.0"
+                          styleClass="ag-field"/>
+                <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onExport"
+                        prefHeight="44.0" styleClass="ag-primary" text="Export"/>
+                <Label fx:id="statusLabel" maxWidth="Infinity" styleClass="ag-muted"
+                       text="" wrapText="true"/>
             </children>
-        </HBox>
-
-        <Label fx:id="statusLabel" styleClass="status-label" text="">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
-        </Label>
+        </VBox>
+        <VBox alignment="TOP_LEFT" maxWidth="560.0" spacing="6.0">
+            <children>
+                <Label styleClass="ag-field-label" text="THE PACKAGE CONTAINS"/>
+                <Label maxWidth="560.0" styleClass="ag-muted" wrapText="true"
+                       text="Entry points ranked by priority score, every finding with its KEV and VirusTotal detail, the operator and the scan date. Markdown or JSON."/>
+            </children>
+        </VBox>
     </children>
-</AnchorPane>
+</VBox>

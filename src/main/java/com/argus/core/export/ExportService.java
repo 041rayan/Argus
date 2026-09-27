@@ -81,10 +81,9 @@ public final class ExportService {
     public static List<EntryPoint> entryPoints(List<PortResult> ports, List<Finding> findings) {
         Map<String, List<Finding>> byPort = new HashMap<>();
         for (Finding f : findings) {
-            JsonNode d = detail(f);
-            if (d != null && d.has("host") && d.has("port")) {
-                byPort.computeIfAbsent(d.path("host").asText() + ":" + d.path("port").asInt(),
-                        k -> new ArrayList<>()).add(f);
+            String key = hostPortOf(f);
+            if (key != null) {
+                byPort.computeIfAbsent(key, k -> new ArrayList<>()).add(f);
             }
         }
         List<EntryPoint> ranked = new ArrayList<>();
@@ -104,10 +103,34 @@ public final class ExportService {
         return out;
     }
 
+    /** One readable finding line. The detail contract lives here, not in a view. */
+    public static FindingOut findingOut(Finding f) {
+        return new FindingOut(f.type(), f.severity(), detailText(f));
+    }
+
     /** Readable finding lines for markdown and JSON export. */
     public static List<FindingOut> findingOuts(List<Finding> findings) {
+        return findings.stream().map(ExportService::findingOut).toList();
+    }
+
+    /**
+     * "host:port" from a finding's detail_json, or null when it carries no
+     * host. A corrupt or absent detail costs the finding its host, never a
+     * throw: the view shows one less row, the export is untouched.
+     */
+    public static String hostPortOf(Finding f) {
+        JsonNode d = detail(f);
+        if (d == null || !d.has("host") || !d.has("port")) {
+            return null;
+        }
+        return d.path("host").asText() + ":" + d.path("port").asInt();
+    }
+
+    /** Finding lines for one host:port, in input order (view detail panel). */
+    public static List<FindingOut> findingOutsFor(List<Finding> findings, String hostPort) {
         return findings.stream()
-                .map(f -> new FindingOut(f.type(), f.severity(), detailText(f)))
+                .filter(f -> hostPort.equals(hostPortOf(f)))
+                .map(ExportService::findingOut)
                 .toList();
     }
 
@@ -228,11 +251,18 @@ public final class ExportService {
         };
     }
 
-    /** Lenient: an unparseable detail_json costs a signal, not the export. */
+    /**
+     * Lenient: an unparseable or absent detail_json costs a signal, not the
+     * export. Jackson throws IllegalArgumentException (not IOException) on a
+     * null content, so the null case is guarded before the read.
+     */
     private static JsonNode detail(Finding f) {
+        if (f == null || f.detailJson() == null) {
+            return null;
+        }
         try {
             return Json.MAPPER.readTree(f.detailJson());
-        } catch (IOException | NullPointerException e) {
+        } catch (IOException e) {
             return null;
         }
     }

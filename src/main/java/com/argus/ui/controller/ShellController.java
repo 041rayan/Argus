@@ -12,7 +12,6 @@ import javafx.scene.layout.StackPane;
 
 import java.io.IOException;
 import java.util.List;
-
 /** Sidebar shell: nav buttons swap panes in the content area (spec 2026-09-27). */
 public final class ShellController {
 
@@ -32,6 +31,8 @@ public final class ShellController {
     private Label keyStatusLabel;
     @FXML
     private Label statusBarLabel;
+    @FXML
+    private Label sessionLabel;
     @FXML
     private StackPane contentArea;
 
@@ -74,6 +75,28 @@ public final class ShellController {
             ExportController controller = loader.getController();
             controller.setMain(main);
         }, "export");
+    }
+
+    public void showResults() {
+        if (!leavePane()) {
+            return;
+        }
+        select(navResults);
+        setPane("results", loader -> {
+            ResultsController controller = loader.getController();
+            controller.setMain(main);
+        }, "results");
+    }
+
+    public void showEntryPoints() {
+        if (!leavePane()) {
+            return;
+        }
+        select(navEntryPoints);
+        setPane("entrypoints", loader -> {
+            EntryPointsController controller = loader.getController();
+            controller.setMain(main);
+        }, "entry points");
     }
 
     /**
@@ -125,17 +148,13 @@ public final class ShellController {
     }
 
     @FXML
-    private void onNavResults() throws IOException {
-        if (leavePane()) {
-            main.showResults();
-        }
+    private void onNavResults() {
+        showResults();
     }
 
     @FXML
-    private void onNavEntryPoints() throws IOException {
-        if (leavePane()) {
-            main.showEntryPoints();
-        }
+    private void onNavEntryPoints() {
+        showEntryPoints();
     }
 
     @FXML
@@ -166,18 +185,20 @@ public final class ShellController {
         }
     }
 
+    /** One class carries the selected state; the token sheet owns the rest. */
     private void select(Button active) {
         for (Button b : List.of(navDashboard, navTargets, navResults,
                 navEntryPoints, navExport, navApiKeys)) {
-            b.getStyleClass().remove("accent");
-            if (!b.getStyleClass().contains("flat")) {
-                b.getStyleClass().add("flat");
-            }
+            b.getStyleClass().remove("ag-nav-selected");
         }
-        active.getStyleClass().remove("flat");
-        if (!active.getStyleClass().contains("accent")) {
-            active.getStyleClass().add("accent");
+        if (!active.getStyleClass().contains("ag-nav-selected")) {
+            active.getStyleClass().add("ag-nav-selected");
         }
+    }
+
+    /** Status bar right side: who is at the keyboard. */
+    public void setSession(String username) {
+        sessionLabel.setText(username + " · vault unlocked");
     }
 
     /** Key status line, called from MainApp after login (same text as dashboard today). */

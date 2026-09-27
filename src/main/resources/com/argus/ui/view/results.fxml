@@ -3,93 +3,92 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
-<AnchorPane fx:id="root"
-            prefHeight="640.0" prefWidth="900.0"
-            styleClass="root-pane"
-            xmlns="http://javafx.com/javafx/21.0.8"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.argus.ui.controller.ResultsController">
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="16.0" styleClass="ag-pane"
+      xmlns="http://javafx.com/javafx/21.0.8"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.argus.ui.controller.ResultsController">
     <children>
-        <Label styleClass="title-label" text="Scan results">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
-        </Label>
-
-        <HBox alignment="CENTER_LEFT" spacing="8.0">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+        <HBox alignment="BOTTOM_LEFT" spacing="12.0">
             <children>
-                <ComboBox fx:id="scanCombo" prefHeight="32.0" prefWidth="380.0"
-                          promptText="Scan" HBox.hgrow="ALWAYS"/>
-                <DatePicker fx:id="dateFilter" prefHeight="32.0" promptText="Any date"/>
+                <VBox alignment="TOP_LEFT" spacing="2.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label styleClass="ag-view-title" text="Scan results"/>
+                        <Label fx:id="scanMetaLabel" maxWidth="Infinity" styleClass="ag-sub"
+                               text="No scan selected"/>
+                    </children>
+                </VBox>
+                <ComboBox fx:id="scanCombo" prefHeight="34.0" prefWidth="380.0"
+                          promptText="Scan" styleClass="ag-field"/>
+                <DatePicker fx:id="dateFilter" prefHeight="34.0" promptText="Any date"
+                            styleClass="ag-field"/>
+                <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#onDelete"
+                        prefHeight="34.0" styleClass="ag-danger" text="Delete scan"/>
             </children>
         </HBox>
 
-        <TextField fx:id="searchField" promptText="Search hosts…">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
-        </TextField>
+        <TextField fx:id="searchField" maxWidth="Infinity"
+                   promptText="Search hosts, IP, country, ASN or org" styleClass="ag-search"/>
 
-        <TableView fx:id="hostsTable" styleClass="striped">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>158.0</AnchorPane.topAnchor>
-            <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
-            <columns>
-                <TableColumn prefWidth="240.0" text="Subdomain">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="subdomain"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="130.0" text="IP">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="ip"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="100.0" text="Country">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="country"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="150.0" text="ASN">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="asn"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="150.0" text="Org">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="org"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="70.0" text="Status">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="alive"/>
-                    </cellValueFactory>
-                </TableColumn>
-            </columns>
-        </TableView>
+        <HBox spacing="16.0" VBox.vgrow="ALWAYS">
+            <children>
+                <TableView fx:id="hostsTable" maxWidth="Infinity" styleClass="ag-table"
+                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn prefWidth="260.0" text="Host">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="subdomain"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="150.0" text="IP">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="ip"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="140.0" text="Country">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="country"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="110.0" text="Status">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="alive"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                    </columns>
+                </TableView>
 
-        <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#onDelete" styleClass="danger" text="Delete scan">
-            <AnchorPane.leftAnchor>236.0</AnchorPane.leftAnchor>
-            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
-        </Button>
-
-        <Button mnemonicParsing="false" onAction="#onEntryPoints" text="Entry Points">
-            <AnchorPane.leftAnchor>110.0</AnchorPane.leftAnchor>
-            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
-        </Button>
-
-        <Button mnemonicParsing="false" onAction="#onBack" text="Back">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
-        </Button>
+                <VBox alignment="TOP_LEFT" maxWidth="300.0" minWidth="300.0"
+                      prefWidth="300.0" spacing="10.0" styleClass="ag-inspector"
+                      HBox.hgrow="NEVER">
+                    <children>
+                        <Label fx:id="inspectorTitle" maxWidth="Infinity"
+                               styleClass="ag-value" text="Select a host"/>
+                        <Separator styleClass="ag-rule"/>
+                        <Label styleClass="ag-field-label" text="IP"/>
+                        <Label fx:id="ipValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="ASN"/>
+                        <Label fx:id="asnValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="ORG"/>
+                        <Label fx:id="orgValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="COUNTRY"/>
+                        <Label fx:id="countryValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="OPEN PORTS"/>
+                        <ListView fx:id="portList" maxWidth="Infinity" prefHeight="120.0"
+                                  styleClass="ag-list"/>
+                        <Label styleClass="ag-field-label" text="FINDINGS"/>
+                        <ListView fx:id="findingList" maxWidth="Infinity" prefHeight="120.0"
+                                  styleClass="ag-list" VBox.vgrow="ALWAYS"/>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
     </children>
-</AnchorPane>
+</VBox>

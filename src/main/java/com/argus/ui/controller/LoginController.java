@@ -25,7 +25,9 @@ import java.util.concurrent.Executors;
 public final class LoginController {
 
     @FXML
-    private Label modeLabel;
+    private Label headingLabel;
+    @FXML
+    private Label subLabel;
     @FXML
     private TextField usernameField;
     @FXML
@@ -108,19 +110,28 @@ public final class LoginController {
         primaryButton.setDisable(false);
     }
 
+    /** Copy for the two auth modes. Pure, so it is unit tested without a toolkit. */
+    public record AuthCopy(String heading, String sub, String primary, String link) {
+    }
+
+    static AuthCopy copyFor(boolean createMode, boolean firstRun) {
+        if (createMode) {
+            return new AuthCopy(
+                    firstRun ? "Create your account" : "Create an account",
+                    firstRun ? "First run. Pick an operator name and password."
+                             : "New operator. Pick a name and password.",
+                    "Create account", "Back to sign in");
+        }
+        return new AuthCopy("Sign in", "Unlock your vault key.", "Sign in", "Create account");
+    }
+
     private void setCreateMode(boolean create) {
         this.createMode = create;
-        if (create) {
-            modeLabel.setText(firstRun
-                    ? "First run — create the operator account."
-                    : "New operator — choose a username and password.");
-            primaryButton.setText("Create account");
-            switchModeButton.setText("Back to sign in");
-        } else {
-            modeLabel.setText("Sign in to continue.");
-            primaryButton.setText("Sign in");
-            switchModeButton.setText("Create account");
-        }
+        AuthCopy copy = copyFor(create, firstRun);
+        headingLabel.setText(copy.heading());
+        subLabel.setText(copy.sub());
+        primaryButton.setText(copy.primary());
+        switchModeButton.setText(copy.link());
     }
 
     @FXML

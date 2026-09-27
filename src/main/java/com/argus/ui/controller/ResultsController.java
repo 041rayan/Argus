@@ -1,37 +1,45 @@
 package com.argus.ui.controller;
 
+import com.argus.core.model.Finding;
+import com.argus.core.model.Host;
+import com.argus.core.model.PortResult;
 import com.argus.core.model.ScanSummary;
 import com.argus.db.Database;
+import com.argus.db.FindingDAO;
 import com.argus.db.HostDAO;
+import com.argus.db.PortDAO;
 import com.argus.db.ScanDAO;
+import com.argus.ui.HostDetail;
 import com.argus.ui.MainApp;
 import com.argus.ui.row.HostRow;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.util.StringConverter;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Results view: pick a scan (optionally filtered by date), hosts table with search. */
-public final class ResultsController {
+public final class ResultsController implements ShellContent {
 
     @FXML
     private ComboBox<ScanSummary> scanCombo;
@@ -43,19 +51,41 @@ public final class ResultsController {
     private TableView<HostRow> hostsTable;
     @FXML
     private Button deleteButton;
+    @FXML
+    private Label scanMetaLabel;
+    @FXML
+    private Label inspectorTitle;
+    @FXML
+    private Label ipValue;
+    @FXML
+    private Label asnValue;
+    @FXML
+    private Label orgValue;
+    @FXML
+    private Label countryValue;
+    @FXML
+    private ListView<String> portList;
+    @FXML
+    private ListView<String> findingList;
+
+    private final ObservableList<String> portLines = FXCollections.observableArrayList();
+    private final ObservableList<String> findingLines = FXCollections.observableArrayList();
+    private Map<String, HostDetail> details = Map.of();
 
     private final ObservableList<ScanSummary> scans = FXCollections.observableArrayList();
     private final ObservableList<HostRow> rows = FXCollections.observableArrayList();
     private final FilteredList<HostRow> filtered = new FilteredList<>(rows);
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+    /* Package-visible for the shell swap-out test (test-seam precedent). */
+    final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "results-worker");
         t.setDaemon(true);
         return t;
     });
 
-    private MainApp main;
     private ScanDAO scanDao;
     private HostDAO hostDao;
+    private PortDAO portDao;
+    private FindingDAO findingDao;
     private List<ScanSummary> allScans = List.of();
 
     @FXML
@@ -94,13 +124,24 @@ public final class ResultsController {
                 }, scanCombo.valueProperty()));
         searchField.textProperty().addListener((obs, old, query) ->
                 filtered.setPredicate(row -> matches(row, query)));
+        portList.setItems(portLines);
+        findingList.setItems(findingLines);
+        hostsTable.getSelectionModel().selectedItemProperty()
+                .addListener((obs, old, row) -> showDetail(row));
     }
 
-    /** Wired by MainApp after the FXML load; first loads happen here. */
+    @Override
+    public void onHidden() {
+        executor.shutdownNow();
+    }
+
+    /** Uniform pane seam: this pane reads no session state, so it keeps no field. */
     public void setMain(MainApp main) {
-        this.main = main;
-        this.scanDao = new ScanDAO(Database.inUserHome());
-        this.hostDao = new HostDAO(Database.inUserHome());
+        Database db = Database.inUserHome();
+        this.scanDao = new ScanDAO(db);
+        this.hostDao = new HostDAO(db);
+        this.portDao = new PortDAO(db);
+        this.findingDao = new FindingDAO(db);
         executor.execute(() -> {
             try {
                 List<ScanSummary> fresh = scanDao.list();
@@ -131,33 +172,72 @@ public final class ResultsController {
         }
     }
 
+    /**
+     * One off-FX load brings the table and its inspector data together
+     * (THREAD.md): no row selection ever touches the database. The
+     * inspector is reset in the same hop that replaces the rows, so a
+     * previous scan's ports can never outlive its table.
+     */
     private void loadHosts(long scanId) {
         executor.execute(() -> {
             try {
-                List<HostRow> fresh = hostDao.listByScan(scanId).stream().map(HostRow::new).toList();
-                Platform.runLater(() -> rows.setAll(fresh));
+                List<Host> hosts = hostDao.listByScan(scanId);
+                List<PortResult> ports = portDao.listByScan(scanId);
+                List<Finding> findings = findingDao.listByScan(scanId);
+                List<HostRow> fresh = hosts.stream().map(HostRow::new).toList();
+                Map<String, HostDetail> grouped = HostDetail.byHost(ports, findings);
+                Platform.runLater(() -> {
+                    rows.setAll(fresh);
+                    details = grouped;
+                    showDetail(null);
+                    scanMetaLabel.setText(metaFor(hosts.size(), ports, findings));
+                });
             } catch (SQLException e) {
                 Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, "Database failure.").showAndWait());
             }
         });
     }
 
-    @FXML
-    private void onEntryPoints() {
-        try {
-            main.showEntryPoints();
-        } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Cannot open entry points view.").showAndWait();
-        }
+    private static String metaFor(int hostCount, List<PortResult> ports, List<Finding> findings) {
+        long open = ports.stream().filter(PortResult::open).count();
+        return hostCount + " hosts · " + open + " open ports · " + findings.size() + " findings";
     }
 
-    @FXML
-    private void onBack() {
-        try {
-            main.showDashboard();
-        } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Cannot open dashboard view.").showAndWait();
+    private void showDetail(HostRow row) {
+        if (row == null) {
+            inspectorTitle.setText("Select a host");
+            ipValue.setText("-");
+            asnValue.setText("-");
+            orgValue.setText("-");
+            countryValue.setText("-");
+            portLines.clear();
+            findingLines.clear();
+            return;
         }
+        HostDetail detail = details.getOrDefault(row.getSubdomain(),
+                HostDetail.empty(row.getSubdomain()));
+        inspectorTitle.setText(row.getSubdomain());
+        ipValue.setText(orDash(row.getIp()));
+        asnValue.setText(orDash(row.getAsn()));
+        orgValue.setText(orDash(row.getOrg()));
+        countryValue.setText(orDash(row.getCountry()));
+        portLines.setAll(detail.openPorts().stream()
+                .map(ResultsController::portLine).toList());
+        findingLines.setAll(detail.findings().stream()
+                .map(ResultsController::findingLine).toList());
+    }
+
+    /** Pure, so the line formats are unit tested without a toolkit. */
+    static String portLine(PortResult p) {
+        return p.port() + "/" + p.protocol() + "  " + orDash(p.service()) + "  " + orDash(p.version());
+    }
+
+    static String findingLine(Finding f) {
+        return orDash(f.severity()) + "  " + orDash(f.type());
+    }
+
+    private static String orDash(String s) {
+        return s == null || s.isBlank() ? "-" : s;
     }
 
     /**

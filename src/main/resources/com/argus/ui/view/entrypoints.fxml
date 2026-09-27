@@ -1,81 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
-<AnchorPane fx:id="root"
-            prefHeight="640.0" prefWidth="900.0"
-            styleClass="root-pane"
-            xmlns="http://javafx.com/javafx/21.0.8"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.argus.ui.controller.EntryPointsController">
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="16.0" styleClass="ag-pane"
+      xmlns="http://javafx.com/javafx/21.0.8"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.argus.ui.controller.EntryPointsController">
     <children>
-        <Label styleClass="title-label" text="Entry points">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.topAnchor>24.0</AnchorPane.topAnchor>
-        </Label>
-
-        <HBox alignment="CENTER_LEFT" spacing="8.0">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>66.0</AnchorPane.topAnchor>
+        <HBox alignment="CENTER_LEFT" spacing="12.0">
             <children>
-                <ComboBox fx:id="scanCombo" prefHeight="32.0" prefWidth="460.0"
-                          promptText="Scan" HBox.hgrow="ALWAYS"/>
+                <Label styleClass="ag-view-title" text="Entry points"/>
+                <ComboBox fx:id="scanCombo" maxWidth="Infinity" prefHeight="34.0"
+                          promptText="Scan" styleClass="ag-field" HBox.hgrow="ALWAYS"/>
             </children>
         </HBox>
 
-        <TableView fx:id="entryTable" styleClass="striped">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>24.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>112.0</AnchorPane.topAnchor>
-            <AnchorPane.bottomAnchor>64.0</AnchorPane.bottomAnchor>
-            <columns>
-                <TableColumn prefWidth="56.0" text="Rank">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="rank"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="250.0" text="Host:Port">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="hostPort"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="90.0" text="Service">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="service"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="90.0" text="Severity">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="severity"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="220.0" text="KEV">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="kev"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="80.0" text="VT">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="vt"/>
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn prefWidth="66.0" text="Score">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="score"/>
-                    </cellValueFactory>
-                </TableColumn>
-            </columns>
-        </TableView>
+        <HBox spacing="16.0" VBox.vgrow="ALWAYS">
+            <children>
+                <TableView fx:id="entryTable" maxWidth="Infinity" styleClass="ag-table"
+                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn prefWidth="50.0" text="Rank">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="rank"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="170.0" text="Host:Port">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="hostPort"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="80.0" text="Service">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="service"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn fx:id="severityColumn" prefWidth="90.0" text="Severity">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="severity"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn fx:id="kevColumn" prefWidth="120.0" text="KEV">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="kev"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="70.0" text="VT">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="vt"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn prefWidth="60.0" text="Score">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="score"/>
+                            </cellValueFactory>
+                        </TableColumn>
+                    </columns>
+                </TableView>
 
-        <Button mnemonicParsing="false" onAction="#onBack" text="Back">
-            <AnchorPane.leftAnchor>24.0</AnchorPane.leftAnchor>
-            <AnchorPane.bottomAnchor>20.0</AnchorPane.bottomAnchor>
-        </Button>
+                <VBox alignment="TOP_LEFT" maxWidth="300.0" minWidth="300.0"
+                      prefWidth="300.0" spacing="10.0" styleClass="ag-inspector"
+                      HBox.hgrow="NEVER">
+                    <children>
+                        <Label fx:id="inspectorTitle" maxWidth="Infinity"
+                               styleClass="ag-value" text="Select an entry point"/>
+                        <Separator styleClass="ag-rule"/>
+                        <Label styleClass="ag-field-label" text="SERVICE"/>
+                        <Label fx:id="serviceValue" maxWidth="Infinity"
+                               styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="SEVERITY"/>
+                        <Label fx:id="severityValue" maxWidth="Infinity"
+                               styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="SCORE"/>
+                        <Label fx:id="scoreValue" maxWidth="Infinity"
+                               styleClass="ag-value" text="-"/>
+                        <Label styleClass="ag-field-label" text="FINDINGS"/>
+                        <ListView fx:id="findingList" maxWidth="Infinity" prefHeight="240.0"
+                                  styleClass="ag-list" VBox.vgrow="ALWAYS"/>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
     </children>
-</AnchorPane>
+</VBox>

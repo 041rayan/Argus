@@ -1,32 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<AnchorPane fx:id="root"
-            prefHeight="360.0" prefWidth="480.0"
-            styleClass="root-pane"
-            xmlns="http://javafx.com/javafx/21.0.8"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.argus.ui.controller.LoginController">
+<StackPane prefHeight="720.0" prefWidth="1280.0" styleClass="root-pane"
+           xmlns="http://javafx.com/javafx/21.0.8"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.argus.ui.controller.LoginController">
     <children>
-        <VBox spacing="12.0">
-            <AnchorPane.leftAnchor>60.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>60.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>48.0</AnchorPane.topAnchor>
+        <HBox alignment="CENTER_LEFT">
             <children>
-                <Label styleClass="title-label" text="Argus"/>
-                <Label fx:id="modeLabel" styleClass="status-label" text="Checking accounts…"/>
-                <TextField fx:id="usernameField" prefHeight="32.0" promptText="Username"/>
-                <PasswordField fx:id="passwordField" prefHeight="32.0" promptText="Password"/>
-                <Button fx:id="primaryButton" mnemonicParsing="false" onAction="#onSubmit"
-                        prefHeight="32.0" styleClass="accent" text="Sign in"/>
-                <Button fx:id="switchModeButton" mnemonicParsing="false" onAction="#onToggleMode"
-                        prefHeight="32.0" text="Create account"/>
-                <Label fx:id="statusLabel" styleClass="status-label" text=""/>
+                <VBox alignment="TOP_LEFT" prefWidth="602.0" spacing="0.0"
+                      HBox.hgrow="NEVER" styleClass="ag-brand-panel">
+                    <padding>
+                        <Insets bottom="56.0" left="62.0" right="40.0" top="70.0"/>
+                    </padding>
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                            <children>
+                                <fx:include source="mark.fxml"/>
+                                <Label styleClass="ag-wordmark" text="ARGUS"/>
+                            </children>
+                        </HBox>
+                        <Label maxWidth="340.0" styleClass="ag-tagline"
+                               text="Reconnaissance console. Targets you are authorized to assess."
+                               wrapText="true">
+                            <padding>
+                                <Insets top="34.0"/>
+                            </padding>
+                        </Label>
+                        <Region VBox.vgrow="ALWAYS"/>
+                        <Label styleClass="ag-mono" text="v0.1.0  ·  local vault"/>
+                    </children>
+                </VBox>
+                <StackPane HBox.hgrow="ALWAYS" styleClass="root-pane">
+                    <children>
+                        <VBox alignment="TOP_LEFT" maxWidth="430.0" spacing="14.0"
+                              styleClass="ag-card">
+                            <children>
+                                <Label fx:id="headingLabel" styleClass="ag-view-title" text="Sign in"/>
+                                <Label fx:id="subLabel" styleClass="ag-sub" text="Unlock your vault key."/>
+                                <Label styleClass="ag-field-label" text="USERNAME">
+                                    <padding>
+                                        <Insets top="8.0"/>
+                                    </padding>
+                                </Label>
+                                <TextField fx:id="usernameField" maxWidth="Infinity"
+                                           prefHeight="44.0" promptText="kasumi"
+                                           styleClass="ag-field"/>
+                                <Label styleClass="ag-field-label" text="PASSWORD"/>
+                                <PasswordField fx:id="passwordField" maxWidth="Infinity"
+                                               prefHeight="44.0" promptText="Password"
+                                               styleClass="ag-field"/>
+                                <Button fx:id="primaryButton" maxWidth="Infinity"
+                                        mnemonicParsing="false" onAction="#onSubmit"
+                                        prefHeight="44.0" styleClass="ag-primary"
+                                        text="Sign in"/>
+                                <Label fx:id="statusLabel" maxWidth="Infinity"
+                                       styleClass="ag-muted" text="" wrapText="true"/>
+                                <Button fx:id="switchModeButton" maxWidth="Infinity"
+                                        mnemonicParsing="false" onAction="#onToggleMode"
+                                        prefHeight="30.0" styleClass="ag-link"
+                                        text="Create account"/>
+                            </children>
+                        </VBox>
+                    </children>
+                </StackPane>
             </children>
-        </VBox>
+        </HBox>
     </children>
-</AnchorPane>
+</StackPane>

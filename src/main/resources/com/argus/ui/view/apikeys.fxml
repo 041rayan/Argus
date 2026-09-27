@@ -3,29 +3,44 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<AnchorPane fx:id="root"
-            prefHeight="280.0" prefWidth="420.0"
-            styleClass="root-pane"
-            xmlns="http://javafx.com/javafx/21.0.8"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.argus.ui.controller.AddApiKeyController">
+<StackPane prefHeight="400.0" prefWidth="480.0" styleClass="root-pane"
+           xmlns="http://javafx.com/javafx/21.0.8"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.argus.ui.controller.AddApiKeyController">
     <children>
-        <VBox spacing="12.0">
-            <AnchorPane.leftAnchor>32.0</AnchorPane.leftAnchor>
-            <AnchorPane.rightAnchor>32.0</AnchorPane.rightAnchor>
-            <AnchorPane.topAnchor>32.0</AnchorPane.topAnchor>
+        <VBox alignment="TOP_LEFT" maxWidth="430.0" spacing="12.0" styleClass="ag-card">
             <children>
-                <Label styleClass="title-label" text="API Keys"/>
-                <Label fx:id="statusLabel" styleClass="status-label" text="Loading…"/>
-                <ComboBox fx:id="providerCombo" prefHeight="32.0"/>
-                <PasswordField fx:id="keyField" prefHeight="32.0" promptText="API key (never displayed after save)"/>
-                <Label fx:id="messageLabel" styleClass="status-label" text=""/>
-                <Button fx:id="saveButton" mnemonicParsing="false" onAction="#onSave" prefHeight="32.0" styleClass="accent" text="Save"/>
-                <Button fx:id="removeButton" mnemonicParsing="false" onAction="#onRemove" prefHeight="32.0" styleClass="danger" text="Remove"/>
-                <Button mnemonicParsing="false" onAction="#onClose" prefHeight="32.0" text="Close"/>
+                <Label styleClass="ag-view-title" text="API keys"/>
+                <Label fx:id="statusLabel" maxWidth="Infinity" styleClass="ag-mono"
+                       text="" wrapText="true"/>
+                <Label styleClass="ag-field-label" text="PROVIDER"/>
+                <ComboBox fx:id="providerCombo" maxWidth="Infinity" prefHeight="38.0"
+                          styleClass="ag-field"/>
+                <Label styleClass="ag-field-label" text="API KEY"/>
+                <PasswordField fx:id="keyField" maxWidth="Infinity" prefHeight="38.0"
+                               promptText="Never displayed after save" styleClass="ag-key"/>
+                <Label fx:id="messageLabel" maxWidth="Infinity" styleClass="ag-muted"
+                       text="" wrapText="true"/>
+                <Region VBox.vgrow="ALWAYS"/>
+                <HBox spacing="10.0">
+                    <children>
+                        <Button fx:id="removeButton" maxWidth="Infinity"
+                                mnemonicParsing="false" onAction="#onRemove"
+                                prefHeight="38.0" styleClass="ag-danger" text="Remove"
+                                HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button mnemonicParsing="false" onAction="#onClose" prefHeight="38.0"
+                                styleClass="ag-link" text="Close"/>
+                        <Button fx:id="saveButton" maxWidth="Infinity" mnemonicParsing="false"
+                                onAction="#onSave" prefHeight="38.0" styleClass="ag-primary"
+                                text="Save" HBox.hgrow="ALWAYS"/>
+                    </children>
+                </HBox>
             </children>
         </VBox>
     </children>
-</AnchorPane>
+</StackPane>

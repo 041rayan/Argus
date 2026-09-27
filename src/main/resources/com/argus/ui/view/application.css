@@ -1,20 +1,214 @@
 /*
- * application.css — Argus dark operator look.
- * Layered after the AtlantaFX Primer Dark theme; controllers add style
- * classes only, never setStyle.
+ * application.css - Argus design tokens.
+ *
+ * Layered after the AtlantaFX Primer Dark user-agent stylesheet, so it
+ * overrides the theme rather than replacing it. Every Argus rule is
+ * namespaced ag-* : CssContractTest proves the FXMLs and the ui
+ * controllers use nothing else, and that nothing here is dead.
+ *
+ * House rules (spec 2026-09-27-ui-overhaul-design.md):
+ *   no setStyle in controllers, no style= in FXML
+ *   one primary per view, destructive never adjacent to the primary
+ *   6 radius on controls, 8 on cards, 34 tall in the shell, 44 in auth
  */
 
 .root-pane {
     -fx-background-color: #0d1117;
+    /* One declaration, whole app: every pane is a descendant of a .root-pane
+       (login, lock, the shell and its panes, the API keys dialog), and
+       -fx-font-family inherits.
+
+       ONE family, not a stack. JavaFX takes the first name and does not fall
+       through to the next, so a comma list is a silent no-op past its first
+       entry: a machine without Lato gets the JavaFX default UI font, which is
+       what it got before this sheet existed. Nothing regresses, it just does
+       not upgrade (GIT.md pre-tag ritual). */
+    -fx-font-family: "Lato";
 }
 
-.title-label {
-    -fx-font-size: 28.0px;
-    -fx-font-weight: bold;
+/* ---------- chrome ---------- */
+.ag-content { -fx-background-color: #0d1117; }
+.ag-pane { -fx-background-color: #0d1117; -fx-padding: 26 26 22 26; }
+.ag-scroll {
+    -fx-background-color: #0d1117;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+.ag-chrome { -fx-background-color: #10151c; }
+.ag-brand-panel {
+    -fx-background-color: #10151c;
+    -fx-border-color: transparent #21262d transparent transparent;
+}
+.ag-card {
+    -fx-background-color: #11161d;
+    -fx-border-color: #21262d;
+    -fx-border-radius: 8;
+    -fx-padding: 18;
+}
+.ag-inspector {
+    -fx-background-color: #11161d;
+    -fx-border-color: #21262d;
+    -fx-border-radius: 8;
+    -fx-padding: 18;
+}
+.ag-tile {
+    -fx-background-color: #11161d;
+    -fx-border-color: #21262d;
+    -fx-border-radius: 8;
+    -fx-padding: 14 16 14 16;
+}
+.ag-statusbar {
+    -fx-background-color: #10151c;
+    -fx-border-color: #21262d transparent transparent transparent;
+    -fx-padding: 0 26 0 26;
+}
+.ag-rule {
+    -fx-max-height: 1;
+    -fx-pref-height: 1;
+    -fx-opacity: 1;
+}
+/* A Control paints no background: the hairline is the Separator's child
+   Region, so the token has to reach it. */
+.ag-rule > .line { -fx-background-color: #21262d; }
+
+/* ---------- type ---------- */
+.ag-view-title { -fx-font-size: 22px; -fx-font-weight: 600; -fx-text-fill: #e6edf3; }
+.ag-wordmark {
+    -fx-font-family: Monospaced;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
     -fx-text-fill: #e6edf3;
 }
+.ag-tagline { -fx-font-size: 16px; -fx-text-fill: #8b949e; }
+.ag-sub { -fx-font-size: 14px; -fx-text-fill: #8b949e; }
+.ag-muted { -fx-font-size: 13.5px; -fx-text-fill: #8b949e; }
+.ag-field-label { -fx-font-size: 12px; -fx-text-fill: #8b949e; }
+.ag-mono {
+    -fx-font-family: Monospaced;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #6e7681;
+}
+.ag-stat-value { -fx-font-size: 24px; -fx-font-weight: 600; -fx-text-fill: #e6edf3; }
+.ag-stat-label { -fx-font-size: 12px; -fx-text-fill: #6e7681; }
+.ag-key { -fx-font-family: Monospaced; -fx-font-size: 13px; }
+.ag-value { -fx-font-size: 13.5px; -fx-text-fill: #c9d1d9; }
 
-.status-label {
-    -fx-font-size: 14.0px;
+/* ---------- status ---------- */
+.ag-status-warn { -fx-text-fill: #d29922; }
+.ag-status-danger { -fx-text-fill: #ff7b72; }
+.ag-status-info { -fx-text-fill: #58a6ff; }
+
+/* ---------- buttons ---------- */
+.ag-primary {
+    -fx-background-color: #238636;
+    -fx-border-color: #2ea043;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+.ag-primary:disabled { -fx-opacity: 0.45; }
+.ag-danger {
+    -fx-background-color: #b62324;
+    -fx-border-color: #d04545;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+.ag-danger:disabled { -fx-opacity: 0.45; }
+.ag-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #58a6ff;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+.ag-nav {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 6;
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 14.5px;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+}
+.ag-nav:hover { -fx-background-color: #161b22; }
+.ag-nav-selected {
+    -fx-background-color: #1b2430;
+    -fx-text-fill: #e6edf3;
+    -fx-font-weight: 500;
+    -fx-border-color: transparent transparent transparent #58a6ff;
+    -fx-border-width: 0 0 0 2;
+}
+.ag-nav-selected:hover { -fx-background-color: #1b2430; }
+
+/* ---------- inputs ---------- */
+.ag-field { -fx-font-size: 14px; -fx-text-fill: #e6edf3; }
+.ag-search { -fx-font-size: 14px; -fx-text-fill: #e6edf3; -fx-pref-height: 34; }
+
+/* ---------- table ---------- */
+.ag-table {
+    -fx-background-color: #0d1117;
+    -fx-border-color: #21262d;
+    -fx-table-cell-border-color: transparent;
+}
+.ag-table .column-header-background { -fx-background-color: #10151c; }
+.ag-table .column-header {
+    -fx-border-color: transparent transparent #21262d transparent;
+    -fx-size: 30;
+}
+.ag-table .column-header .label {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #6e7681;
+    -fx-alignment: center-left;
+}
+.ag-table .table-cell { -fx-border-color: transparent; -fx-cell-size: 36; }
+.ag-table .table-row-cell {
+    -fx-font-size: 13.5px;
+    -fx-text-fill: #c9d1d9;
+    -fx-border-color: transparent transparent #161b22 transparent;
+}
+.ag-table .table-row-cell:filled:selected,
+.ag-table .table-row-cell:selected { -fx-background-color: #1b2430; }
+.ag-kev {
+    -fx-font-family: Monospaced;
+    -fx-font-size: 12px;
     -fx-text-fill: #8b949e;
 }
+
+/* ---------- list ---------- */
+.ag-list {
+    -fx-background-color: transparent;
+    -fx-border-color: #21262d;
+    -fx-border-radius: 6;
+    -fx-padding: 4;
+}
+.ag-list .list-cell {
+    -fx-font-family: Monospaced;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #c9d1d9;
+    -fx-background-color: transparent;
+    -fx-padding: 4 6 4 6;
+}
+.ag-list .list-cell:filled:selected { -fx-background-color: #1b2430; }
+
+/* ---------- charts ---------- */
+.ag-chart {
+    -fx-background-color: #11161d;
+    -fx-border-color: #21262d;
+    -fx-border-radius: 8;
+    -fx-padding: 12;
+}
+.ag-chart .chart-title { -fx-font-size: 14px; -fx-text-fill: #e6edf3; }
+.ag-chart .axis { -fx-tick-label-fill: #8b949e; -fx-font-size: 12px; }
+.ag-chart .axis-label { -fx-text-fill: #6e7681; -fx-font-size: 12px; }
+
+/* ---------- the mark ---------- */
+.ag-mark-eye { -fx-fill: transparent; -fx-stroke: #58a6ff; -fx-stroke-width: 1.7; }
+.ag-mark-pupil { -fx-fill: #58a6ff; -fx-stroke: transparent; }
