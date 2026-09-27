@@ -9,69 +9,75 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<ScrollPane fitToWidth="true" styleClass="root-pane"
+<ScrollPane fitToWidth="true" styleClass="ag-scroll"
             xmlns="http://javafx.com/javafx/21.0.8"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.argus.ui.controller.DashboardController">
     <content>
-        <VBox spacing="16.0" style="-fx-padding: 24;">
+        <VBox spacing="16.0" styleClass="ag-pane">
             <children>
-                <Label styleClass="title-label" text="Dashboard"/>
-                <VBox spacing="8.0">
+                <Label styleClass="ag-view-title" text="Dashboard"/>
+
+                <VBox spacing="12.0" styleClass="ag-card">
                     <children>
-                        <Label styleClass="text-muted" text="SCAN"/>
-                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <Label styleClass="ag-field-label" text="SCAN"/>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
                             <children>
-                                <ComboBox fx:id="scanTargetCombo" prefHeight="32.0"
-                                          prefWidth="300.0" promptText="Target"/>
+                                <ComboBox fx:id="scanTargetCombo" maxWidth="Infinity"
+                                          prefHeight="38.0" promptText="Target"
+                                          styleClass="ag-field" HBox.hgrow="ALWAYS"/>
                                 <Button fx:id="scanButton" mnemonicParsing="false"
-                                        onAction="#onScan" prefHeight="32.0"
-                                        styleClass="accent" text="Scan"/>
+                                        onAction="#onScan" prefHeight="38.0"
+                                        styleClass="ag-primary" text="Scan"/>
                             </children>
                         </HBox>
                         <ProgressBar fx:id="scanProgress" maxWidth="Infinity"
-                                     prefHeight="12.0" progress="0"/>
-                        <Label fx:id="scanStatusLabel" styleClass="status-label" text=""/>
+                                     prefHeight="8.0" progress="0"/>
+                        <Label fx:id="scanStatusLabel" maxWidth="Infinity"
+                               styleClass="ag-muted" text="" wrapText="true"/>
                     </children>
                 </VBox>
-                <HBox spacing="16.0">
+
+                <HBox spacing="12.0">
                     <children>
-                        <VBox spacing="2.0">
+                        <VBox spacing="2.0" styleClass="ag-tile" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label styleClass="text-muted" text="SCANS"/>
-                                <Label fx:id="statScans" styleClass="title-2" text="–"/>
+                                <Label styleClass="ag-stat-label" text="SCANS"/>
+                                <Label fx:id="statScans" styleClass="ag-stat-value" text="-"/>
                             </children>
                         </VBox>
-                        <VBox spacing="2.0">
+                        <VBox spacing="2.0" styleClass="ag-tile" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label styleClass="text-muted" text="ALIVE HOSTS"/>
-                                <Label fx:id="statHosts" styleClass="title-2" text="–"/>
+                                <Label styleClass="ag-stat-label" text="ALIVE HOSTS"/>
+                                <Label fx:id="statHosts" styleClass="ag-stat-value" text="-"/>
                             </children>
                         </VBox>
-                        <VBox spacing="2.0">
+                        <VBox spacing="2.0" styleClass="ag-tile" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label styleClass="text-muted" text="OPEN PORTS"/>
-                                <Label fx:id="statPorts" styleClass="title-2" text="–"/>
+                                <Label styleClass="ag-stat-label" text="OPEN PORTS"/>
+                                <Label fx:id="statPorts" styleClass="ag-stat-value" text="-"/>
                             </children>
                         </VBox>
-                        <VBox spacing="2.0">
+                        <VBox spacing="2.0" styleClass="ag-tile" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label styleClass="text-muted" text="KEV FINDINGS"/>
-                                <Label fx:id="statKev" styleClass="title-2" text="–"/>
+                                <Label styleClass="ag-stat-label" text="KEV FINDINGS"/>
+                                <Label fx:id="statKev" styleClass="ag-stat-value" text="-"/>
                             </children>
                         </VBox>
-                        <VBox spacing="2.0">
+                        <VBox spacing="2.0" styleClass="ag-tile" HBox.hgrow="ALWAYS">
                             <children>
-                                <Label styleClass="text-muted" text="VT-FLAGGED"/>
-                                <Label fx:id="statVt" styleClass="title-2" text="–"/>
+                                <Label styleClass="ag-stat-label" text="VT FLAGGED"/>
+                                <Label fx:id="statVt" styleClass="ag-stat-value" text="-"/>
                             </children>
                         </VBox>
                     </children>
                 </HBox>
+
                 <HBox spacing="16.0">
                     <children>
-                        <BarChart fx:id="severityChart" animated="false" legendVisible="false"
-                                  prefHeight="260.0" prefWidth="420.0" title="Findings by severity">
+                        <BarChart fx:id="severityChart" animated="false"
+                                  legendVisible="false" styleClass="ag-chart"
+                                  title="Findings by severity" HBox.hgrow="ALWAYS">
                             <xAxis>
                                 <CategoryAxis label="Severity"/>
                             </xAxis>
@@ -79,8 +85,9 @@
                                 <NumberAxis label="Count"/>
                             </yAxis>
                         </BarChart>
-                        <BarChart fx:id="portsChart" animated="false" legendVisible="false"
-                                  prefHeight="260.0" prefWidth="420.0" title="Top ports">
+                        <BarChart fx:id="portsChart" animated="false"
+                                  legendVisible="false" styleClass="ag-chart"
+                                  title="Top ports" HBox.hgrow="ALWAYS">
                             <xAxis>
                                 <CategoryAxis label="Port"/>
                             </xAxis>

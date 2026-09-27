@@ -21,4 +21,5 @@ target/
 .idea/
 *.log
 .codegraph/
+.superpowers/
 example.com.json

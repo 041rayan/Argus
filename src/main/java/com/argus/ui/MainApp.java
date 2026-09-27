@@ -8,14 +8,9 @@ import com.argus.db.ApiKeysDAO;
 import com.argus.db.Database;
 import com.argus.db.ScanDAO;
 import com.argus.ui.controller.AddApiKeyController;
-import com.argus.ui.controller.DashboardController;
-import com.argus.ui.controller.EntryPointsController;
-import com.argus.ui.controller.ExportController;
 import com.argus.ui.controller.LockController;
-import com.argus.ui.controller.ResultsController;
 import com.argus.ui.controller.LoginController;
 import com.argus.ui.controller.ShellController;
-import com.argus.ui.controller.TargetsController;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.Event;
@@ -43,6 +38,12 @@ import java.util.Set;
 public final class MainApp extends Application {
 
     private static final Logger LOG = LoggerFactory.getLogger(MainApp.class);
+
+    /** Every main window opens here. The spec fixes these four numbers. */
+    static final int WINDOW_WIDTH = 1280;
+    static final int WINDOW_HEIGHT = 720;
+    static final int MIN_WIDTH = 1100;
+    static final int MIN_HEIGHT = 640;
 
     private Stage primaryStage;
 
@@ -85,42 +86,31 @@ public final class MainApp extends Application {
     /** Login is the entry scene — every start goes through authentication. */
     public void showLogin() throws IOException {
         FXMLLoader l = loader("login");
-        Scene scene = new Scene(l.load(), 480, 360);
+        Scene scene = new Scene(l.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
         applyCss(scene);
-        clearStageMin();
         LoginController controller = l.getController();
         controller.setMain(this);
-        primaryStage.setScene(scene);
+        applyGeometry(scene);
     }
 
-    public void showDashboard() throws IOException {
-        FXMLLoader l = loader("dashboard");
-        Scene scene = new Scene(l.load(), 900, 640);
-        applyCss(scene);
-        clearStageMin();
-        DashboardController controller = l.getController();
-        controller.setMain(this);
-        primaryStage.setScene(scene);
-    }
-
-    /** Sidebar shell (1280x800, 1100x700 minimum): dashboard loads as the first pane. */
+    /** Sidebar shell: the content area hosts every pane, dashboard first. */
     public void showShell() throws IOException {
         FXMLLoader l = loader("shell");
-        Scene scene = new Scene(l.load(), 1280, 800);
+        Scene scene = new Scene(l.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
         applyCss(scene);
         ShellController controller = l.getController();
         controller.setMain(this);
-        primaryStage.setScene(scene);
-        primaryStage.setMinWidth(1100);
-        primaryStage.setMinHeight(700);
+        applyGeometry(scene);
+        controller.setSession(currentUsername);
         controller.showDashboard();
         refreshShellKeyStatus(controller);
     }
 
-    /** Legacy scenes predate the shell minimum: restore unconstrained sizing. */
-    private void clearStageMin() {
-        primaryStage.setMinWidth(0);
-        primaryStage.setMinHeight(0);
+    /** The single place window geometry is set, so no scene can drift. */
+    private void applyGeometry(Scene scene) {
+        primaryStage.setScene(scene);
+        primaryStage.setMinWidth(MIN_WIDTH);
+        primaryStage.setMinHeight(MIN_HEIGHT);
     }
 
     private void refreshShellKeyStatus(ShellController controller) {
@@ -139,55 +129,14 @@ public final class MainApp extends Application {
         t.start();
     }
 
-    public void showTargets() throws IOException {
-        FXMLLoader l = loader("targets");
-        Scene scene = new Scene(l.load(), 900, 640);
-        applyCss(scene);
-        clearStageMin();
-        TargetsController controller = l.getController();
-        controller.setMain(this);
-        primaryStage.setScene(scene);
-    }
-
-    public void showExport() throws IOException {
-        FXMLLoader l = loader("export");
-        Scene scene = new Scene(l.load(), 900, 640);
-        applyCss(scene);
-        clearStageMin();
-        ExportController controller = l.getController();
-        controller.setMain(this);
-        primaryStage.setScene(scene);
-    }
-
-    public void showResults() throws IOException {
-        FXMLLoader l = loader("results");
-        Scene scene = new Scene(l.load(), 900, 640);
-        applyCss(scene);
-        clearStageMin();
-        ResultsController controller = l.getController();
-        controller.setMain(this);
-        primaryStage.setScene(scene);
-    }
-
-    public void showEntryPoints() throws IOException {
-        FXMLLoader l = loader("entrypoints");
-        Scene scene = new Scene(l.load(), 900, 640);
-        applyCss(scene);
-        clearStageMin();
-        EntryPointsController controller = l.getController();
-        controller.setMain(this);
-        primaryStage.setScene(scene);
-    }
-
     /** Shown by the idle monitor callback (always via Platform.runLater). */
     public void showLock() throws IOException {
         FXMLLoader l = loader("lock");
-        Scene scene = new Scene(l.load(), 480, 300);
+        Scene scene = new Scene(l.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
         applyCss(scene);
-        clearStageMin();
         LockController controller = l.getController();
         controller.setMain(this);
-        primaryStage.setScene(scene);
+        applyGeometry(scene);
     }
 
     /** Called by LoginController and LockController on a successful verify. */

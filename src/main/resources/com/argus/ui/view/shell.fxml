@@ -1,49 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<BorderPane fx:id="root"
-            styleClass="root-pane"
+<BorderPane prefHeight="720.0" prefWidth="1280.0" styleClass="root-pane"
             xmlns="http://javafx.com/javafx/21.0.8"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.argus.ui.controller.ShellController">
     <left>
-        <VBox spacing="4.0" style="-fx-padding: 16 12 16 12;">
+        <VBox alignment="TOP_LEFT" prefWidth="220.0" spacing="4.0"
+              styleClass="ag-chrome">
             <children>
-                <Label styleClass="title-label" text="Argus"/>
-                <Separator/>
+                <HBox alignment="CENTER_LEFT" spacing="9.0">
+                    <padding>
+                        <Insets bottom="18.0" left="18.0" right="14.0" top="20.0"/>
+                    </padding>
+                    <children>
+                        <fx:include source="mark.fxml"/>
+                        <Label styleClass="ag-wordmark" text="ARGUS"/>
+                    </children>
+                </HBox>
+                <Separator styleClass="ag-rule"/>
                 <Button fx:id="navDashboard" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavDashboard" styleClass="flat" text="Dashboard"/>
-                <Button fx:id="navTargets" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavTargets" styleClass="flat" text="Targets"/>
+                        onAction="#onNavDashboard" prefHeight="34.0"
+                        styleClass="ag-nav" text="Dashboard"/>
                 <Button fx:id="navResults" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavResults" styleClass="flat" text="Results"/>
+                        onAction="#onNavResults" prefHeight="34.0"
+                        styleClass="ag-nav" text="Results"/>
                 <Button fx:id="navEntryPoints" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavEntryPoints" styleClass="flat" text="Entry Points"/>
+                        onAction="#onNavEntryPoints" prefHeight="34.0"
+                        styleClass="ag-nav" text="Entry points"/>
+                <Button fx:id="navTargets" maxWidth="Infinity" mnemonicParsing="false"
+                        onAction="#onNavTargets" prefHeight="34.0"
+                        styleClass="ag-nav" text="Targets"/>
                 <Button fx:id="navExport" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavExport" styleClass="flat" text="Export"/>
+                        onAction="#onNavExport" prefHeight="34.0"
+                        styleClass="ag-nav" text="Export"/>
                 <Button fx:id="navApiKeys" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onNavApiKeys" styleClass="flat" text="API Keys"/>
-                <Separator/>
-                <Label fx:id="keyStatusLabel" styleClass="status-label" text=""/>
+                        onAction="#onNavApiKeys" prefHeight="34.0"
+                        styleClass="ag-nav" text="API keys"/>
+                <Separator styleClass="ag-rule"/>
+                <Label fx:id="keyStatusLabel" maxWidth="Infinity" styleClass="ag-mono"
+                       text="" wrapText="true">
+                    <padding>
+                        <Insets left="14.0" top="6.0"/>
+                    </padding>
+                </Label>
+                <Region VBox.vgrow="ALWAYS"/>
                 <Button fx:id="lockButton" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onLock" styleClass="flat" text="Lock"/>
+                        onAction="#onLock" prefHeight="34.0"
+                        styleClass="ag-nav" text="Lock"/>
                 <Button fx:id="logoutButton" maxWidth="Infinity" mnemonicParsing="false"
-                        onAction="#onLogout" styleClass="flat" text="Log out"/>
+                        onAction="#onLogout" prefHeight="34.0"
+                        styleClass="ag-nav" text="Log out"/>
             </children>
         </VBox>
     </left>
     <center>
-        <StackPane fx:id="contentArea"/>
+        <StackPane fx:id="contentArea" styleClass="ag-content"/>
     </center>
     <bottom>
-        <HBox>
+        <HBox alignment="CENTER_LEFT" prefHeight="28.0" styleClass="ag-statusbar">
             <children>
-                <Label fx:id="statusBarLabel" styleClass="status-label" text="Ready"/>
+                <Label fx:id="statusBarLabel" styleClass="ag-mono" text="Ready"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="sessionLabel" styleClass="ag-mono" text=""/>
             </children>
         </HBox>
     </bottom>

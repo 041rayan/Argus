@@ -12,8 +12,11 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
@@ -21,6 +24,8 @@ import javafx.scene.control.TextInputDialog;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +47,20 @@ public final class TargetsController implements ShellContent {
     private ComboBox<String> profileCombo;
     @FXML
     private TableView<TargetRow> targetsTable;
+    @FXML
+    private Label inspectorTitle;
+    @FXML
+    private Label domainValue;
+    @FXML
+    private Label profileValue;
+    @FXML
+    private Label createdValue;
+    @FXML
+    private ListView<String> scopeList;
+    @FXML
+    private Button deleteButton;
+
+    private final ObservableList<String> scopeLines = FXCollections.observableArrayList();
 
     private final ObservableList<TargetRow> rows = FXCollections.observableArrayList();
     private final FilteredList<TargetRow> filtered = new FilteredList<>(rows);
@@ -52,8 +71,11 @@ public final class TargetsController implements ShellContent {
         return t;
     });
 
-    private MainApp main;
     private TargetDAO dao;
+
+    /** Inspector timestamps use the same stamp as the scan labels. */
+    private static final DateTimeFormatter STAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     @FXML
     private void initialize() {
@@ -61,13 +83,36 @@ public final class TargetsController implements ShellContent {
         profileCombo.setItems(FXCollections.observableArrayList("quick", "full", "custom"));
         profileCombo.setValue("quick");
         searchField.textProperty().addListener((obs, old, query) -> filtered.setPredicate(row -> matches(row, query)));
+        scopeList.setItems(scopeLines);
+        deleteButton.setDisable(true);
+        targetsTable.getSelectionModel().selectedItemProperty()
+                .addListener((obs, old, row) -> showTarget(row));
     }
 
-    /** Wired by MainApp after the FXML load; first list load happens here. */
+    /** Uniform pane seam: this pane reads no session state, so it keeps no field. */
     public void setMain(MainApp main) {
-        this.main = main;
         this.dao = new TargetDAO(Database.inUserHome());
         reload();
+    }
+
+    /** The right hand inspector: the selected target's full detail (JAVAFX.md). */
+    private void showTarget(TargetRow row) {
+        if (row == null) {
+            inspectorTitle.setText("Select a target");
+            domainValue.setText("-");
+            profileValue.setText("-");
+            createdValue.setText("-");
+            scopeLines.clear();
+            deleteButton.setDisable(true);
+            return;
+        }
+        Target target = row.target();
+        inspectorTitle.setText(target.label());
+        domainValue.setText(target.domain());
+        profileValue.setText(target.profile());
+        createdValue.setText(STAMP.format(target.createdAt()));
+        scopeLines.setAll(target.scopeCidrs());
+        deleteButton.setDisable(false);
     }
 
     @FXML
