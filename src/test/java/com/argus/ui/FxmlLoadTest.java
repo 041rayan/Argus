@@ -8,6 +8,7 @@ import com.argus.ui.controller.ResultsController;
 import com.argus.ui.controller.LockController;
 import com.argus.ui.controller.LoginController;
 import com.argus.ui.controller.TargetsController;
+import com.argus.ui.controller.ShellController;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -34,6 +35,14 @@ class FxmlLoadTest {
         } catch (IllegalStateException alreadyRunning) {
             // toolkit already running in this JVM
         }
+    }
+
+    @Test
+    void shellLoads() throws IOException {
+        FXMLLoader loader = loader("shell");
+        Parent root = loader.load();
+        assertNotNull(root);
+        assertTrue(loader.getController() instanceof ShellController);
     }
 
     @Test

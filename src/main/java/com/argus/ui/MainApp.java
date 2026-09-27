@@ -4,6 +4,7 @@ import atlantafx.base.theme.PrimerDark;
 import com.argus.core.auth.LoginService;
 import com.argus.core.concurrency.IdleLockMonitor;
 import com.argus.db.AuditDAO;
+import com.argus.db.ApiKeysDAO;
 import com.argus.db.Database;
 import com.argus.db.ScanDAO;
 import com.argus.ui.controller.AddApiKeyController;
@@ -13,6 +14,7 @@ import com.argus.ui.controller.ExportController;
 import com.argus.ui.controller.LockController;
 import com.argus.ui.controller.ResultsController;
 import com.argus.ui.controller.LoginController;
+import com.argus.ui.controller.ShellController;
 import com.argus.ui.controller.TargetsController;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * Argus HQ: owns the primary Stage, the session (operator id, vault key,
@@ -84,6 +87,7 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("login");
         Scene scene = new Scene(l.load(), 480, 360);
         applyCss(scene);
+        clearStageMin();
         LoginController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -93,15 +97,53 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("dashboard");
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
+        clearStageMin();
         DashboardController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
+    }
+
+    /** Sidebar shell (1280x800, 1100x700 minimum): dashboard loads as the first pane. */
+    public void showShell() throws IOException {
+        FXMLLoader l = loader("shell");
+        Scene scene = new Scene(l.load(), 1280, 800);
+        applyCss(scene);
+        ShellController controller = l.getController();
+        controller.setMain(this);
+        primaryStage.setScene(scene);
+        primaryStage.setMinWidth(1100);
+        primaryStage.setMinHeight(700);
+        controller.showDashboard();
+        refreshShellKeyStatus(controller);
+    }
+
+    /** Legacy scenes predate the shell minimum: restore unconstrained sizing. */
+    private void clearStageMin() {
+        primaryStage.setMinWidth(0);
+        primaryStage.setMinHeight(0);
+    }
+
+    private void refreshShellKeyStatus(ShellController controller) {
+        Thread t = new Thread(() -> {
+            try {
+                Set<String> providers =
+                        new ApiKeysDAO(Database.inUserHome()).configuredProviders(operatorId);
+                String line = "VirusTotal: "
+                        + (providers.contains("VirusTotal") ? "configured" : "not configured");
+                Platform.runLater(() -> controller.setKeyStatus(line));
+            } catch (SQLException e) {
+                Platform.runLater(() -> controller.setKeyStatus("Key status unavailable."));
+            }
+        }, "shell-key-status");
+        t.setDaemon(true);
+        t.start();
     }
 
     public void showTargets() throws IOException {
         FXMLLoader l = loader("targets");
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
+        clearStageMin();
         TargetsController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -111,6 +153,7 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("export");
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
+        clearStageMin();
         ExportController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -120,6 +163,7 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("results");
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
+        clearStageMin();
         ResultsController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -129,6 +173,7 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("entrypoints");
         Scene scene = new Scene(l.load(), 900, 640);
         applyCss(scene);
+        clearStageMin();
         EntryPointsController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -139,6 +184,7 @@ public final class MainApp extends Application {
         FXMLLoader l = loader("lock");
         Scene scene = new Scene(l.load(), 480, 300);
         applyCss(scene);
+        clearStageMin();
         LockController controller = l.getController();
         controller.setMain(this);
         primaryStage.setScene(scene);
@@ -150,7 +196,7 @@ public final class MainApp extends Application {
         operatorId = result.operatorId();
         vaultKey = result.vaultKey();
         try {
-            showDashboard();
+            showShell();
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR, "Cannot open dashboard view.").showAndWait();
             return;

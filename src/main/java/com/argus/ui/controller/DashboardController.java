@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** Controller for the dashboard view (MVC pattern): navigation, key status, scans. */
-public final class DashboardController {
+public final class DashboardController implements ShellContent {
 
     private static final Logger LOG = LoggerFactory.getLogger(DashboardController.class);
 
@@ -49,13 +49,15 @@ public final class DashboardController {
     @FXML
     private Label scanStatusLabel;
 
-    private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+    /* Package-visible for the shell swap-out test (test-seam precedent). */
+    final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "apikey-status");
         t.setDaemon(true);
         return t;
     });
 
-    private final ExecutorService coordinator = Executors.newSingleThreadExecutor(r -> {
+    /* Package-visible for the shell swap-out test (test-seam precedent). */
+    final ExecutorService coordinator = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "scan-coordinator");
         t.setDaemon(true);
         return t;
@@ -64,7 +66,9 @@ public final class DashboardController {
     private MainApp main;
     private volatile ScanRunner runner;
     /** True while the coordinator thread is still constructing the runner. */
-    private volatile boolean starting;
+    volatile boolean starting;
+    /** Set by onHidden: the pane is gone, release the coordinator when the run ends. */
+    private volatile boolean hidden;
     private int hostCount;
     private int portCount;
 
@@ -165,6 +169,20 @@ public final class DashboardController {
     }
 
     /**
+     * Shell swap-out: the status thread always stops. The coordinator stops
+     * only when no scan owns it — a running scan keeps its thread until
+     * the ScanFinished handler below releases it.
+     */
+    @Override
+    public void onHidden() {
+        hidden = true;
+        worker.shutdownNow();
+        if (!isScanning()) {
+            coordinator.shutdownNow();
+        }
+    }
+
+    /**
      * Decrypted VirusTotal key for the scan, or null when there is none.
      * Runs on the coordinator thread, so the vault read stays off FX.
      * A lookup failure costs VT enrichment, never the scan (API.md no-key law).
@@ -181,6 +199,11 @@ public final class DashboardController {
             LOG.warn("vt key lookup failed, scanning without reputation: {}", e.getMessage());
             return null;
         }
+    }
+
+    /** True while a scan run owns the coordinator thread. */
+    boolean isScanning() {
+        return starting || runner != null;
     }
 
     /** Event-bus thread — hop to FX (JAVAFX.md). */
@@ -204,6 +227,9 @@ public final class DashboardController {
                 if (runner != null) {
                     runner.close();
                     runner = null;
+                }
+                if (hidden) {
+                    coordinator.shutdown();
                 }
             }
         });
