@@ -16,6 +16,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.util.StringConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -26,6 +28,8 @@ import java.util.concurrent.Executors;
 
 /** Controller for the dashboard view (MVC pattern): navigation, key status, scans. */
 public final class DashboardController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DashboardController.class);
 
     @FXML
     private Label statusLabel;
@@ -148,7 +152,7 @@ public final class DashboardController {
             try {
                 // construction may refresh the KEV catalog (network) — FX thread stays free
                 ScanRunner newRunner = new ScanRunner(target, main.operatorId(), events,
-                        main.vaultKey());
+                        vtKey());
                 runner = newRunner;
                 newRunner.run();
             } catch (RuntimeException e) {
@@ -158,6 +162,25 @@ public final class DashboardController {
                 starting = false;
             }
         });
+    }
+
+    /**
+     * Decrypted VirusTotal key for the scan, or null when there is none.
+     * Runs on the coordinator thread, so the vault read stays off FX.
+     * A lookup failure costs VT enrichment, never the scan (API.md no-key law).
+     */
+    private byte[] vtKey() {
+        byte[] vault = main.vaultKey();
+        if (vault == null) {
+            return null;
+        }
+        try {
+            return new ApiKeysDAO(Database.inUserHome())
+                    .find(main.operatorId(), "VirusTotal", vault).orElse(null);
+        } catch (SQLException e) {
+            LOG.warn("vt key lookup failed, scanning without reputation: {}", e.getMessage());
+            return null;
+        }
     }
 
     /** Event-bus thread — hop to FX (JAVAFX.md). */
