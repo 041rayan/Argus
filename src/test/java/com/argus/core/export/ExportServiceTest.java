@@ -155,4 +155,29 @@ class ExportServiceTest {
                         + ",\"cve\":\"CVE-2021-41773\",\"confidence\":\"" + confidence
                         + "\",\"ransomware\":" + ransomware + "}");
     }
+
+    @Test
+    void findingOutsForReturnsOnlyThatHostAndPort() {
+        var findings = List.of(
+                new Finding(0, null, "kev", "KEV_MATCH", "HIGH",
+                        "{\"host\":\"a.example.com\",\"port\":80,\"cve\":\"CVE-2021-1\"}"),
+                new Finding(0, null, "kev", "KEV_MATCH", "MEDIUM",
+                        "{\"host\":\"a.example.com\",\"port\":443,\"cve\":\"CVE-2021-2\"}"));
+
+        var out = ExportService.findingOutsFor(findings, "a.example.com:80");
+
+        assertEquals(1, out.size());
+        assertEquals("CVE-2021-1", out.get(0).detail().split(" ")[1]);
+    }
+
+    @Test
+    void findingOutsForHandlesUnreadableDetail() {
+        var findings = List.of(
+                new Finding(0, null, "kev", "KEV_MATCH", "HIGH", null),
+                new Finding(0, null, "kev", "KEV_MATCH", "LOW", "{"));
+
+        assertEquals(List.of(), ExportService.findingOutsFor(findings, "a.example.com:80"),
+                "a corrupt detail_json costs the finding its host, never the view");
+        assertEquals(List.of(), ExportService.findingOutsFor(List.of(), "a.example.com:80"));
+    }
 }
