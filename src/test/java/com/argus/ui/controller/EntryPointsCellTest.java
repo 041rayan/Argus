@@ -50,13 +50,47 @@ class EntryPointsCellTest {
     }
 
     @Test
-    void theKevCellRendersTheColumnValueAndOffersTheFullTextAsATooltip() throws Exception {
+    void theKevCellShowsTheIdentifierAndKeepsTheFullTextAsATooltip() throws Exception {
         TableCell<?, ?> cell = renderCell("kev", EntryPointsController.kevCells(), KEV_ROW);
 
-        assertEquals("CVE-2021-1 CONFIRMED", cell.getText(),
-                "the cell shows the column's own value");
+        assertEquals("CVE-2021-1", cell.getText(),
+                "the column is 160px, so the cell carries the identifier only");
         assertNotNull(cell.getTooltip(), "a real KEV match needs its full list on hover");
-        assertEquals("CVE-2021-1 CONFIRMED", cell.getTooltip().getText());
+        assertEquals("CVE-2021-1 CONFIRMED", cell.getTooltip().getText(),
+                "confidence and the rest of the list stay one hover away");
+    }
+
+    @Test
+    void aKevCellCountsTheIdentifiersItHides() throws Exception {
+        var row = new EntryPointsRow(new ExportService.EntryPoint(1, "a.example.com:80", "http",
+                "HIGH", "CVE-2021-41773 CONFIRMED; CVE-2021-45046 CANDIDATE", "-", 75));
+
+        TableCell<?, ?> cell = renderCell("kev", EntryPointsController.kevCells(), row);
+
+        assertEquals("CVE-2021-41773 +1", cell.getText(),
+                "two identifiers do not fit the column, so the count is shown");
+        assertEquals("CVE-2021-41773 CONFIRMED; CVE-2021-45046 CANDIDATE",
+                cell.getTooltip().getText());
+    }
+
+    @Test
+    void theCellTextCollapsesTheConfidenceWords() {
+        assertEquals("CVE-2021-41773",
+                EntryPointsController.kevCellText("CVE-2021-41773 CONFIRMED"));
+        assertEquals("CVE-2021-41773",
+                EntryPointsController.kevCellText("CVE-2021-41773 CANDIDATE"));
+        assertEquals("CVE-2021-41773 +1",
+                EntryPointsController.kevCellText(
+                        "CVE-2021-41773 CONFIRMED; CVE-2021-45046 CANDIDATE"));
+        assertEquals("CVE-2021-41773", EntryPointsController.kevCellText("CVE-2021-41773"),
+                "a bare identifier is already the display form");
+    }
+
+    @Test
+    void aRowWithNoMatchIsUnchanged() {
+        assertEquals("-", EntryPointsController.kevCellText("-"));
+        assertEquals("", EntryPointsController.kevCellText(""));
+        assertEquals("", EntryPointsController.kevCellText(null));
     }
 
     @Test
@@ -114,8 +148,6 @@ class EntryPointsCellTest {
             table.lookupAll(".table-cell").stream()
                     .filter(TableCell.class::isInstance)
                     .map(TableCell.class::cast)
-                    .filter(c -> row.getKev().equals(c.getText())
-                            || row.getSeverity().equals(c.getText()))
                     .findFirst()
                     .ifPresent(c -> rendered.set((TableCell<?, ?>) c));
             return null;

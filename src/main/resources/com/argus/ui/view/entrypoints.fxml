@@ -46,7 +46,7 @@
                                 <PropertyValueFactory property="severity"/>
                             </cellValueFactory>
                         </TableColumn>
-                        <TableColumn fx:id="kevColumn" prefWidth="120.0" text="KEV">
+                        <TableColumn fx:id="kevColumn" prefWidth="160.0" text="KEV">
                             <cellValueFactory>
                                 <PropertyValueFactory property="kev"/>
                             </cellValueFactory>

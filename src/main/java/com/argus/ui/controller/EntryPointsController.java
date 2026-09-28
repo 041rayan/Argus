@@ -197,20 +197,36 @@ public final class EntryPointsController implements ShellContent {
     }
 
     /**
-     * A table cell is handed the column's own value, never the row, so both
+     * A table cell is handed the column's own value, never the row, so the
      * factories are typed to the String the PropertyValueFactory produces.
-     * The KEV cell is short by design and carries the full list in a tooltip.
+     * The KEV column fits one identifier: the cell drops the confidence word
+     * (Severity already carries it) and counts any others, and the tooltip
+     * keeps the full list.
      */
     static Callback<TableColumn<EntryPointsRow, String>, TableCell<EntryPointsRow, String>> kevCells() {
         return column -> new TableCell<>() {
             @Override
             protected void updateItem(String kev, boolean empty) {
                 super.updateItem(kev, empty);
-                String text = empty ? null : kev;
-                setText(text);
-                setTooltip(text == null || "-".equals(text) ? null : new Tooltip(text));
+                String full = empty ? null : kev;
+                setText(kevCellText(full));
+                setTooltip(full == null || full.isBlank() || "-".equals(full)
+                        ? null : new Tooltip(full));
             }
         };
+    }
+
+    /**
+     * Display form of a KEV cell: the first identifier on its own, plus a
+     * count of any others. Pure, so the transformation is unit tested.
+     */
+    static String kevCellText(String kev) {
+        if (kev == null || kev.isBlank()) {
+            return "";
+        }
+        String[] parts = kev.split(";");
+        String first = parts[0].strip().replaceFirst("\\s+(CONFIRMED|CANDIDATE)$", "");
+        return parts.length > 1 ? first + " +" + (parts.length - 1) : first;
     }
 
     /** Severity is coloured worst first; a placeholder "-" stays uncoloured. */
