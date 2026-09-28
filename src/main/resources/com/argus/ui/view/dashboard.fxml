@@ -14,7 +14,7 @@
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.argus.ui.controller.DashboardController">
     <content>
-        <VBox spacing="16.0" styleClass="ag-pane">
+        <VBox fx:id="paneRoot" spacing="16.0" styleClass="ag-pane">
             <children>
                 <Label styleClass="ag-view-title" text="Dashboard"/>
 
@@ -73,7 +73,7 @@
                     </children>
                 </HBox>
 
-                <HBox spacing="16.0">
+                <HBox fx:id="chartRow" spacing="16.0">
                     <children>
                         <BarChart fx:id="severityChart" animated="false"
                                   legendVisible="false" styleClass="ag-chart"

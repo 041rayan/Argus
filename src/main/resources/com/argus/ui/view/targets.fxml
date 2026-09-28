@@ -8,7 +8,10 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <VBox spacing="16.0" styleClass="ag-pane"
       xmlns="http://javafx.com/javafx/21.0.8"
@@ -19,7 +22,15 @@
 
         <VBox spacing="12.0" styleClass="ag-card">
             <children>
-                <Label styleClass="ag-field-label" text="NEW TARGET"/>
+                <HBox alignment="CENTER_LEFT">
+                    <children>
+                        <Label fx:id="formTitle" styleClass="ag-field-label" text="NEW TARGET"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="cancelButton" mnemonicParsing="false"
+                                onAction="#onCancelEdit" styleClass="ag-link" text="Cancel"
+                                visible="false"/>
+                    </children>
+                </HBox>
                 <HBox alignment="BOTTOM_LEFT" spacing="12.0">
                     <children>
                         <VBox spacing="6.0" HBox.hgrow="ALWAYS">
@@ -54,8 +65,8 @@
                                           prefWidth="140.0" styleClass="ag-field"/>
                             </children>
                         </VBox>
-                        <Button mnemonicParsing="false" onAction="#onAdd"
-                                prefHeight="38.0" styleClass="ag-primary" text="Add"/>
+                        <Button fx:id="saveButton" mnemonicParsing="false" onAction="#onAdd"
+                                prefHeight="38.0" styleClass="ag-primary" text="Add target"/>
                     </children>
                 </HBox>
             </children>
@@ -92,22 +103,32 @@
                     </columns>
                 </TableView>
 
-                <VBox alignment="TOP_LEFT" maxWidth="300.0" minWidth="300.0"
+                <VBox fx:id="inspector" alignment="TOP_LEFT" maxWidth="340.0" minWidth="260.0"
                       prefWidth="300.0" spacing="10.0" styleClass="ag-inspector"
                       HBox.hgrow="NEVER">
                     <children>
                         <Label fx:id="inspectorTitle" maxWidth="Infinity"
                                styleClass="ag-value" text="Select a target"/>
                         <Separator styleClass="ag-rule"/>
-                        <Label styleClass="ag-field-label" text="DOMAIN"/>
-                        <Label fx:id="domainValue" maxWidth="Infinity"
-                               styleClass="ag-value" text="-"/>
-                        <Label styleClass="ag-field-label" text="PROFILE"/>
-                        <Label fx:id="profileValue" maxWidth="Infinity"
-                               styleClass="ag-value" text="-"/>
-                        <Label styleClass="ag-field-label" text="CREATED"/>
-                        <Label fx:id="createdValue" maxWidth="Infinity"
-                               styleClass="ag-value" text="-"/>
+                        <GridPane hgap="10.0" vgap="6.0">
+                            <children>
+                                <Label styleClass="ag-field-label" text="DOMAIN" GridPane.columnIndex="0"/>
+                                <Label fx:id="domainValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" maxWidth="Infinity"/>
+                                <Label styleClass="ag-field-label" text="PROFILE" GridPane.columnIndex="0"
+                                       GridPane.rowIndex="1"/>
+                                <Label fx:id="profileValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity"/>
+                                <Label styleClass="ag-field-label" text="CREATED" GridPane.columnIndex="0"
+                                       GridPane.rowIndex="2"/>
+                                <Label fx:id="createdValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity"/>
+                            </children>
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="88.0"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                        </GridPane>
                         <Label styleClass="ag-field-label" text="SCOPE"/>
                         <ListView fx:id="scopeList" maxWidth="Infinity" prefHeight="150.0"
                                   styleClass="ag-list" VBox.vgrow="ALWAYS"/>

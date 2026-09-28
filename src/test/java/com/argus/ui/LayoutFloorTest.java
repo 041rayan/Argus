@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -91,19 +92,6 @@ class LayoutFloorTest {
     }
 
     @Test
-    void theInspectorKeepsItsWidthAtTheFloor() throws Exception {
-        for (String name : TABLES) {
-            Parent root = layoutAtTheFloor(name);
-
-            Node inspector = onFx(() -> root.lookup(".ag-inspector"));
-            assertTrue(inspector != null, name + " has no inspector");
-            double width = onFx(inspector::getBoundsInLocal).getWidth();
-            assertTrue(width >= 299, name + " inspector shrank to " + (long) width
-                    + "px; it is pinned at 300 so the table keeps the rest");
-        }
-    }
-
-    @Test
     void theDashboardScrollsRatherThanClips() throws Exception {
         URL fxml = resource("dashboard.fxml");
         ScrollPane root = (ScrollPane) onFx(() -> {
@@ -127,6 +115,45 @@ class LayoutFloorTest {
         assertTrue(wanted > viewport,
                 "the dashboard content (" + (long) wanted + "px) fits the viewport ("
                         + (long) viewport + "px); the ScrollPane would then be dead weight");
+    }
+
+    @Test
+    void theInspectorTracksTheWindowWidth() throws Exception {
+        // 30% of the pane, at two widths where the clamps are not active
+        assertEquals(Math.round(1008 * 0.30), inspectorWidthAt("results", 1008), 2,
+                "at 1008 wide the inspector must be 30% of it");
+        assertEquals(Math.round(1100 * 0.30), inspectorWidthAt("results", 1100), 2,
+                "at 1100 wide the inspector must be 30% of it, not a fixed 300");
+    }
+
+    @Test
+    void theInspectorKeepsItsClampsAtBothEnds() throws Exception {
+        int wide = inspectorWidthAt("results", 1600);
+        int narrow = inspectorWidthAt("results", 500);
+
+        assertTrue(wide <= 340, "the inspector must not grow past 340px, got " + wide);
+        assertTrue(narrow >= 260, "the inspector must not shrink below 260px, got " + narrow);
+    }
+
+    /** The inspector's laid-out width with the pane content given this width. */
+    private static int inspectorWidthAt(String name, double contentWidth) throws Exception {
+        URL fxml = resource(name + ".fxml");
+        return onFx(() -> {
+            Parent root;
+            try {
+                root = new FXMLLoader(fxml).load();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+            new Scene(root, contentWidth, BOX);
+            root.applyCss();
+            root.layout();
+            Node inspector = root.lookup(".ag-inspector");
+            if (inspector == null) {
+                fail(name + " has no inspector");
+            }
+            return (int) inspector.getBoundsInLocal().getWidth();
+        });
     }
 
     /** Loads a pane, unwraps a ScrollPane, and runs one layout pass at 880x612. */

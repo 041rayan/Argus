@@ -25,6 +25,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 
@@ -60,6 +61,8 @@ public final class EntryPointsController implements ShellContent {
     private Label scoreValue;
     @FXML
     private ListView<String> findingList;
+    @FXML
+    private VBox inspector;
 
     private final ObservableList<ScanSummary> scans = FXCollections.observableArrayList();
     private final ObservableList<EntryPointsRow> rows = FXCollections.observableArrayList();
@@ -81,6 +84,7 @@ public final class EntryPointsController implements ShellContent {
         entryTable.setItems(rows);
         scanCombo.setItems(scans);
         findingList.setItems(findingLines);
+        PaneLayout.bindInspectorWidth(inspector, 0.30, 260, 340);
         kevColumn.getStyleClass().add("ag-kev");
         kevColumn.setCellFactory(kevCells());
         severityColumn.setCellFactory(severityCells());

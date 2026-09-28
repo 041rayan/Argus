@@ -27,6 +27,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +79,11 @@ public final class DashboardController implements ShellContent {
     @FXML
     private BarChart<String, Number> portsChart;
 
+    @FXML
+    private HBox chartRow;
+    @FXML
+    private VBox paneRoot;
+
     /* Package-visible for the shell swap-out test (test-seam precedent). */
     final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "apikey-status");
@@ -105,6 +113,15 @@ public final class DashboardController implements ShellContent {
 
     @FXML
     private void initialize() {
+        // The chart row follows the window height, not the pane's own content
+        // height, which in a ScrollPane would be circular. FXMLLoader assigns
+        // the ScrollPane's <content> property after this method runs, so the
+        // binding waits for the parent to appear rather than reading a null.
+        paneRoot.parentProperty().addListener((obs, was, parent) -> {
+            if (parent instanceof ScrollPane viewport) {
+                PaneLayout.bindHeight(chartRow, viewport.heightProperty(), 0.34, 220, 340);
+            }
+        });
         scanTargetCombo.setCellFactory(c -> new ListCell<>() {
             @Override
             protected void updateItem(Target item, boolean empty) {

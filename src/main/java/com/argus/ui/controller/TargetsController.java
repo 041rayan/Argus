@@ -20,6 +20,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -59,6 +60,17 @@ public final class TargetsController implements ShellContent {
     private ListView<String> scopeList;
     @FXML
     private Button deleteButton;
+    @FXML
+    private Label formTitle;
+    @FXML
+    private Button saveButton;
+    @FXML
+    private Button cancelButton;
+    @FXML
+    private VBox inspector;
+
+    /** The row the form is editing, or null when the form inserts. */
+    private Target editing;
 
     private final ObservableList<String> scopeLines = FXCollections.observableArrayList();
 
@@ -84,9 +96,45 @@ public final class TargetsController implements ShellContent {
         profileCombo.setValue("quick");
         searchField.textProperty().addListener((obs, old, query) -> filtered.setPredicate(row -> matches(row, query)));
         scopeList.setItems(scopeLines);
+        PaneLayout.bindInspectorWidth(inspector, 0.30, 260, 340);
         deleteButton.setDisable(true);
         targetsTable.getSelectionModel().selectedItemProperty()
                 .addListener((obs, old, row) -> showTarget(row));
+    }
+
+    /** The add form as data. Pure, so the parsing is unit tested. */
+    public record FormInput(String label, String domain, List<String> scope, String profile) {
+    }
+
+    /**
+     * Reads the add/update form. Empty means a required field is blank, which
+     * the caller reports rather than writing a half row.
+     */
+    static Optional<FormInput> readForm(String label, String domain, String scope, String profile) {
+        String trimmedLabel = label == null ? "" : label.trim();
+        String trimmedDomain = domain == null ? "" : domain.trim();
+        if (trimmedLabel.isEmpty() || trimmedDomain.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> cidrs = scope == null ? List.of()
+                : Arrays.stream(scope.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        return Optional.of(new FormInput(trimmedLabel, trimmedDomain, cidrs,
+                profile == null || profile.isBlank() ? "quick" : profile));
+    }
+
+    /**
+     * The record to write. A null id is an insert and keeps the given
+     * timestamp; an id is an update and must keep the row's own created_at.
+     */
+    static Optional<Target> toTarget(FormInput form, Long id, Instant createdAt) {
+        return id == null
+                ? Optional.of(new Target(null, form.label(), form.domain(), form.scope(),
+                        form.profile(), createdAt))
+                : Optional.of(new Target(id, form.label(), form.domain(), form.scope(),
+                        form.profile(), createdAt));
     }
 
     /** Uniform pane seam: this pane reads no session state, so it keeps no field. */
@@ -107,34 +155,52 @@ public final class TargetsController implements ShellContent {
             return;
         }
         Target target = row.target();
+        editing = target;
         inspectorTitle.setText(target.label());
         domainValue.setText(target.domain());
         profileValue.setText(target.profile());
         createdValue.setText(STAMP.format(target.createdAt()));
         scopeLines.setAll(target.scopeCidrs());
         deleteButton.setDisable(false);
+        loadIntoForm(target);
     }
 
+    /** Selecting a row loads it into the form, which is how an update starts. */
+    private void loadIntoForm(Target target) {
+        labelField.setText(target.label());
+        domainField.setText(target.domain());
+        scopeField.setText(String.join(", ", target.scopeCidrs()));
+        profileCombo.setValue(target.profile());
+        formTitle.setText("EDIT TARGET");
+        saveButton.setText("Update target");
+        cancelButton.setVisible(true);
+    }
+
+    /**
+     * One button, two writes. With no row loaded it inserts; with a row
+     * loaded it updates that row, keeping the row's own created_at.
+     */
     @FXML
     private void onAdd() {
-        String label = labelField.getText().trim();
-        String domain = domainField.getText().trim();
-        if (label.isEmpty() || domain.isEmpty()) {
+        Optional<FormInput> form = readForm(labelField.getText(), domainField.getText(),
+                scopeField.getText(), profileCombo.getValue());
+        if (form.isEmpty()) {
             new Alert(Alert.AlertType.WARNING, "Label and domain are required.").showAndWait();
             return;
         }
-        String profile = profileCombo.getValue();
-        if ("custom".equals(profile) && !editCustomPorts()) {
+        if ("custom".equals(form.get().profile()) && !editCustomPorts()) {
             return;
         }
-        List<String> scope = Arrays.stream(scopeField.getText().split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
-        Target target = new Target(null, label, domain, scope, profile, Instant.now());
+        boolean update = editing != null;
+        Target target = toTarget(form.get(), editing == null ? null : editing.id(),
+                editing == null ? Instant.now() : editing.createdAt()).orElseThrow();
         executor.execute(() -> {
             try {
-                dao.insert(target);
+                if (update) {
+                    dao.update(target);
+                } else {
+                    dao.insert(target);
+                }
                 Platform.runLater(() -> {
                     clearForm();
                     reload();
@@ -145,6 +211,12 @@ public final class TargetsController implements ShellContent {
                 Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, "Database failure.").showAndWait());
             }
         });
+    }
+
+    /** Leave edit mode without writing, back to a blank insert form. */
+    @FXML
+    private void onCancelEdit() {
+        clearForm();
     }
 
     /** Custom profile: collect the port list, save it, false cancels the target save. */
@@ -221,10 +293,14 @@ public final class TargetsController implements ShellContent {
     }
 
     private void clearForm() {
+        editing = null;
         labelField.clear();
         domainField.clear();
         scopeField.clear();
         profileCombo.setValue("quick");
+        formTitle.setText("NEW TARGET");
+        saveButton.setText("Add target");
+        cancelButton.setVisible(false);
     }
 
     private static boolean matches(TargetRow row, String query) {

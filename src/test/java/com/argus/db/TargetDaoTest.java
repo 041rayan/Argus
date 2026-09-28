@@ -27,6 +27,36 @@ class TargetDaoTest {
         dao = new TargetDAO(new Database(tmp.resolve("argus-test.db")));
     }
 
+    @Test
+    void updateRejectsADomainAnotherRowAlreadyUses() throws SQLException {
+        long id = dao.insert(sample());
+        dao.insert(new Target(null, "Other", "other.example",
+                List.of(), "quick", Instant.now()));
+
+        assertThrows(IllegalArgumentException.class, () -> dao.update(
+                        new Target(id, "Lab", "other.example", List.of(), "quick", Instant.now())),
+                "update must refuse a duplicate domain the way insert does, "
+                        + "not surface a raw UNIQUE constraint error");
+
+        assertEquals("example.com", dao.find(id).orElseThrow().domain(),
+                "the rejected update must not have changed the row");
+    }
+
+    @Test
+    void updateAllowsKeepingItsOwnDomain() throws SQLException {
+        long id = dao.insert(sample());
+        Target saved = dao.find(id).orElseThrow();
+
+        dao.update(new Target(id, "Renamed", saved.domain(),
+                List.of("10.0.0.0/8"), "full", saved.createdAt()));
+
+        Target after = dao.find(id).orElseThrow();
+        assertEquals("Renamed", after.label());
+        assertEquals("example.com", after.domain());
+        assertEquals("full", after.profile());
+        assertEquals(saved.createdAt(), after.createdAt(), "created_at is immutable");
+    }
+
     private static Target sample() {
         return new Target(null, "Lab", "example.com",
                 List.of("10.0.0.0/8", "192.168.1.0/24"), "quick", Instant.now());

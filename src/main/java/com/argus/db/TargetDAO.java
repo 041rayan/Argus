@@ -65,6 +65,9 @@ public final class TargetDAO {
 
     /** Updates label, domain, scope and profile; created_at is immutable. */
     public void update(Target t) throws SQLException {
+        if (domainHeldByAnother(t)) {
+            throw new IllegalArgumentException("target domain already exists");
+        }
         String sql = "UPDATE target SET label = ?, domain = ?, scope_cidrs = ?, profile = ? WHERE id = ?";
         try (Connection c = db.connect();
              PreparedStatement p = c.prepareStatement(sql)) {
@@ -74,6 +77,19 @@ public final class TargetDAO {
             p.setString(4, t.profile());
             p.setLong(5, t.id());
             p.executeUpdate();
+        }
+    }
+
+    /** A row other than this one already holds the domain. */
+    private boolean domainHeldByAnother(Target t) throws SQLException {
+        try (Connection c = db.connect();
+             PreparedStatement p = c.prepareStatement(
+                     "SELECT 1 FROM target WHERE domain = ? AND id <> ?")) {
+            p.setString(1, t.domain());
+            p.setLong(2, t.id() == null ? -1L : t.id());
+            try (ResultSet rs = p.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 

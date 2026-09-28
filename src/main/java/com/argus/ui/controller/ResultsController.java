@@ -28,6 +28,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.sql.SQLException;
@@ -67,6 +68,8 @@ public final class ResultsController implements ShellContent {
     private ListView<String> portList;
     @FXML
     private ListView<String> findingList;
+    @FXML
+    private VBox inspector;
 
     private final ObservableList<String> portLines = FXCollections.observableArrayList();
     private final ObservableList<String> findingLines = FXCollections.observableArrayList();
@@ -126,6 +129,7 @@ public final class ResultsController implements ShellContent {
                 filtered.setPredicate(row -> matches(row, query)));
         portList.setItems(portLines);
         findingList.setItems(findingLines);
+        PaneLayout.bindInspectorWidth(inspector, 0.30, 260, 340);
         hostsTable.getSelectionModel().selectedItemProperty()
                 .addListener((obs, old, row) -> showDetail(row));
     }

@@ -9,6 +9,8 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <VBox spacing="16.0" styleClass="ag-pane"
@@ -65,21 +67,37 @@
                     </columns>
                 </TableView>
 
-                <VBox alignment="TOP_LEFT" maxWidth="300.0" minWidth="300.0"
+                <VBox fx:id="inspector" alignment="TOP_LEFT" maxWidth="340.0" minWidth="260.0"
                       prefWidth="300.0" spacing="10.0" styleClass="ag-inspector"
                       HBox.hgrow="NEVER">
                     <children>
                         <Label fx:id="inspectorTitle" maxWidth="Infinity"
                                styleClass="ag-value" text="Select a host"/>
                         <Separator styleClass="ag-rule"/>
-                        <Label styleClass="ag-field-label" text="IP"/>
-                        <Label fx:id="ipValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
-                        <Label styleClass="ag-field-label" text="ASN"/>
-                        <Label fx:id="asnValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
-                        <Label styleClass="ag-field-label" text="ORG"/>
-                        <Label fx:id="orgValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
-                        <Label styleClass="ag-field-label" text="COUNTRY"/>
-                        <Label fx:id="countryValue" maxWidth="Infinity" styleClass="ag-value" text="-"/>
+                        <GridPane hgap="10.0" vgap="6.0">
+                            <children>
+                                <Label styleClass="ag-field-label" text="IP"
+                                       GridPane.columnIndex="0"/>
+                                <Label fx:id="ipValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" maxWidth="Infinity"/>
+                                <Label styleClass="ag-field-label" text="ASN"
+                                       GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                                <Label fx:id="asnValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity"/>
+                                <Label styleClass="ag-field-label" text="ORG"
+                                       GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                                <Label fx:id="orgValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity"/>
+                                <Label styleClass="ag-field-label" text="COUNTRY"
+                                       GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                                <Label fx:id="countryValue" styleClass="ag-value" text="-"
+                                       GridPane.columnIndex="1" GridPane.rowIndex="3" maxWidth="Infinity"/>
+                            </children>
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="72.0"/>
+                                <ColumnConstraints hgrow="ALWAYS"/>
+                            </columnConstraints>
+                        </GridPane>
                         <Label styleClass="ag-field-label" text="OPEN PORTS"/>
                         <ListView fx:id="portList" maxWidth="Infinity" prefHeight="120.0"
                                   styleClass="ag-list"/>
